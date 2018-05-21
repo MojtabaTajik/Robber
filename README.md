@@ -9,3 +9,8 @@ Feauters :
 - Show wich DLLs candidate for hijacking
 - Show exported method names of candidate DLLs
 - Detrmine wich hijacks is suitable for using (executable Size, Signed, number of dependent DLLs) and show theme in diffrent color
+
+ <img width="400" src="https://raw.githubusercontent.com/MojtabaTajik/Robber/master/Resources/1.PNG"> |
+ <img width="400" src="https://raw.githubusercontent.com/MojtabaTajik/Robber/master/Resources/2.PNG">
+:------------------------:|:-------------------------:
+
