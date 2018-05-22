@@ -45,6 +45,6 @@ Todo :
 
 - [ ] Make Robber multithreaded
 
- <img width="400" src="https://raw.githubusercontent.com/MojtabaTajik/Robber/master/Resources/Robber.PNG">
+ <img src="https://raw.githubusercontent.com/MojtabaTajik/Robber/master/Resources/Robber.PNG">
 
 
