@@ -41,10 +41,6 @@ Feauters :
 - Determine exported method names of candidate DLLs
 - Detrmine wich hijacks is suitable for use (executable Size, Signed, number of dependent DLLs) and show theme in diffrent color
 
-Todo :
-
-- [ ] Make Robber multithreaded
-
  <img src="https://raw.githubusercontent.com/MojtabaTajik/Robber/master/Resources/Robber.PNG">
 
 
