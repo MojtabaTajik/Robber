@@ -198,6 +198,8 @@ begin
       ImportDLLs.Free;
       PEFile.Free;
     end;
+
+    Application.ProcessMessages;
   end;
 end;
 
@@ -241,6 +243,8 @@ begin
           PEFile.Free;
         end;
       end;
+
+      Application.ProcessMessages;
     end;
   finally
     Methods.Free;
