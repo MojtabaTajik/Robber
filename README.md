@@ -41,6 +41,8 @@ Feauters :
 - Determine exported method names of candidate DLLs
 - Detrmine wich hijacks is suitable for use (executable Size, Signed, number of dependent DLLs) and show theme in diffrent color
 
+[Find out latest Robber executable here](https://github.com/MojtabaTajik/Robber/releases)
+
  <img src="https://raw.githubusercontent.com/MojtabaTajik/Robber/master/Resources/Robber.PNG">
 
 
