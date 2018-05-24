@@ -3,7 +3,12 @@ unit DLLHijack;
 interface
 
 uses
-  Windows, SysUtils, Classes, Messages, Winapi.CommDlg;
+  Windows, SysUtils, Classes, Messages, Winapi.CommDlg,
+  PE.Common,
+  PE.Image,
+  PE.ExportSym,
+  PE.Imports.Lib,
+  PE.Imports.Func;
 
 type
   THijackRate = (hrGood, hrMedium, hrBad);
@@ -17,8 +22,6 @@ type
   TDLLHijack = class
   private
     fFileName: string;
-    function RVA2Offset(const Value: DWORD; const FileName: string): DWORD;
-    function GetFileInfo: Integer;
   public
     /// <summary>
     /// Create TDLLHijack class for work with pe information of given file
@@ -93,89 +96,9 @@ type
 
 implementation
 
-var
-  // variable to get section infos -> RVA calculating
-  vir_offs, virsize: array [1 .. 20] of DWORD;
-  raw_offs, rawsize: array [1 .. 20] of DWORD;
-  charac: DWORD;
-  which_sec: Integer;
-  doshead: DWORD = $00;
-  elfanew: DWORD = $00;
-  PEheader: DWORD = $00;
-  Imagebase: DWORD = $00;
-  number_sec: byte;
-
-  // variables for Import table and so on
-  ImpdirRVA: DWORD = $00; // Import Directory RVA
-  ImpdirSize: DWORD = $00; // Import Directory Size;
-  OriFirstThunkRVA: DWORD = $00;
-  FirstThunkRVA: DWORD = $00;
-  NameRVA: DWORD = $00; // RVA to Name of DLL
-  Hint1: WORD = $00;
-  ordflag: DWORD = $00; // var to check if function is imported by ordinal
-
 constructor TDLLHijack.Create(const FileName: string);
 begin
   fFileName := FileName;
-  GetFileInfo;
-end;
-
-function TDLLHijack.GetFileInfo: Integer;
-var
-  FileInfo: TMemoryStream;
-  i: Integer;
-begin
-  FileInfo := TMemoryStream.Create;
-  try
-    FileInfo.LoadFromFile(fFileName);
-    FileInfo.Seek(0, soFromBeginning);
-    FileInfo.ReadData(doshead, 2);
-
-    // Not a valid PE File
-    if doshead <> $5A4D then
-      Exit(0);
-
-    // File address of new Exe header
-    FileInfo.Seek($3C, soFromBeginning);
-    FileInfo.ReadData(elfanew, 4);
-
-    // PE Header
-    FileInfo.Seek(elfanew, soFromBeginning);
-    FileInfo.ReadData(PEheader, 2);
-
-    // Not a valid PE File
-    if not(PEheader = $4550) then
-      Exit(0);
-
-    // Number of Sections
-    FileInfo.Seek(4, sofromcurrent);
-    FileInfo.ReadData(number_sec, 2);
-
-    // Imagebase
-    FileInfo.Seek($2C, sofromcurrent);
-    FileInfo.ReadData(Imagebase, 4);
-
-    // Section Info
-    FileInfo.Seek(elfanew + $F8, soFromBeginning);
-    for i := 1 to number_sec do
-    begin
-      FileInfo.Seek(8, sofromcurrent);
-      // Vir_size
-      FileInfo.ReadData(virsize[i], 4);
-      // Virtual Adress
-      FileInfo.ReadData(vir_offs[i], 4);
-      // Raw size
-      FileInfo.ReadData(rawsize[i], 4);
-      // Raw Offset
-      FileInfo.ReadData(raw_offs[i], 4);
-      // Characteristics
-      FileInfo.Seek(12, sofromcurrent);
-      FileInfo.ReadData(charac, 4);
-    end;
-    Result := 1;
-  finally
-    FileInfo.Free;
-  end;
 end;
 
 function TDLLHijack.GetFileSize: Cardinal;
@@ -192,77 +115,29 @@ begin
   end;
 end;
 
-function TDLLHijack.RVA2Offset(const Value: DWORD;
-  const FileName: string): DWORD;
-var
-  i: Integer;
-begin
-  which_sec := 0;
-  for i := 1 to number_sec do
-  begin
-    if (Value >= vir_offs[i]) and (Value < vir_offs[i + 1]) then
-    begin
-      which_sec := i;
-      break;
-    end;
-    if i = number_sec then
-      if (Value <= (vir_offs[i] + virsize[i])) and (Value >= vir_offs[1]) then
-        which_sec := i
-      else
-      begin
-        // MessageBox(0, pchar('Not in file!'), pchar('Error'), mb_ok);
-      end;
-  end;
-  Result := Value - vir_offs[which_sec] + raw_offs[which_sec];
-end;
-
 procedure TDLLHijack.GetImportedDLL(DLLs: TStrings);
 var
-  SourceFile: TMemoryStream;
-  d: DWORD; // just a help variable
-  Count_DLL, temp: Integer;
-  DLLName: string;
+  Lib: TPEImportLibrary;
+  Fn: TPEImportFunction;
+  rva: TRVA;
+  Img: TPEImage;
 begin
   DLLs.Clear;
 
-  SourceFile := TMemoryStream.Create;
+  Img := TPEImage.Create;
   try
-    SourceFile.LoadFromFile(fFileName);
-    SourceFile.Seek(elfanew + $80, soFromBeginning);
-    SourceFile.ReadData(ImpdirRVA, 4);
-    SourceFile.ReadData(ImpdirSize, 4);
+    Img.LoadFromFile(fFileName);
 
-    Count_DLL := -1;
+    for Lib in Img.Imports.Libs do
+    begin
+      DLLs.Add(Lib.Name);
 
-    // Loop through every data directory
-    repeat
-      Count_DLL := Count_DLL + 1;
+      rva := Lib.IatRva;
 
-      // Name of DLL
-      SourceFile.Position := RVA2Offset(ImpdirRVA, fFileName) + $C + $14 *
-        Count_DLL;
-      SourceFile.ReadData(NameRVA, 4);
-
-      if NameRVA = 0 then
-        break;
-
-      SourceFile.Seek(RVA2Offset(NameRVA, fFileName), soFromBeginning);
-
-      // Get current DLL name
-      DLLName := '';
-      repeat
-        SourceFile.ReadData(temp, 1);
-        DLLName := UTF8ToString(DLLName + Char(temp));
-      until temp = 0;
-
-      // Delete #0 character from end of DLL name
-      DLLName := Copy(DLLName, 0, Length(DLLName) - 1);
-
-      if (LowerCase(ExtractFileExt(DLLName)) = '.dll') then
-        DLLs.Add(UTF8ToString(DLLName));
-    until (NameRVA = 0);
+      inc(rva, Img.ImageWordSize); // null
+    end;
   finally
-    SourceFile.Free;
+    Img.Free;
   end;
 end;
 
@@ -309,115 +184,36 @@ end;
 
 procedure TDLLHijack.GetDLLMethods(DLLName: string; Methods: TStrings);
 var
-  SourceFile: TMemoryStream;
-  d: DWORD; // just a help variable
-  Count_DLL, Count_API, temp: Integer;
-  CurrentAPIName, CurrentDLLName: string;
+  Lib: TPEImportLibrary;
+  Fn: TPEImportFunction;
+  rva: TRVA;
+  Img: TPEImage;
 begin
   Methods.Clear;
 
-  SourceFile := TMemoryStream.Create;
+  Img := TPEImage.Create;
   try
-    SourceFile.LoadFromFile(fFileName);
-    SourceFile.Position := elfanew + $80;
-    SourceFile.ReadData(ImpdirRVA, 4);
-    SourceFile.ReadData(ImpdirSize, 4);
+    Img.LoadFromFile(fFileName);
 
-    Count_DLL := -1;
+    for Lib in Img.Imports.Libs do
+    begin
+      rva := Lib.IatRva;
 
-    // Loop through every data directory
-    repeat
-      Count_DLL := Count_DLL + 1;
-
-      // Name of DLL
-      SourceFile.Seek(RVA2Offset(ImpdirRVA, fFileName) + $C + $14 * Count_DLL,
-        soFromBeginning);
-      SourceFile.ReadData(NameRVA, 4);
-
-      if NameRVA = 0 then
-        break;
-
-      SourceFile.Seek(RVA2Offset(NameRVA, fFileName), soFromBeginning);
-
-      // Get current DLL name
-      CurrentDLLName := '';
-      repeat
-        SourceFile.ReadData(temp, 1);
-        CurrentDLLName := UTF8ToString(CurrentDLLName + Chr(temp));
-      until temp = 0;
-
-      // Delete #0 character from end of DLL name
-      CurrentDLLName := Copy(CurrentDLLName, 0, Length(CurrentDLLName) - 1);
-
-      // Check current DLL = User given name
-      if (CurrentDLLName <> DLLName) then
-        Continue;
-
-      // At First read OriginalFirstThunk and FirstThunk
-      SourceFile.Seek(RVA2Offset(ImpdirRVA, fFileName) + 0 + $14 * Count_DLL,
-        soFromBeginning);
-      SourceFile.ReadData(OriFirstThunkRVA, 4);
-      SourceFile.Seek(RVA2Offset(ImpdirRVA, fFileName) + $10 + $14 * Count_DLL,
-        soFromBeginning);
-
-      SourceFile.ReadData(FirstThunkRVA, 4);
-
-      // OriginalFirstThunk is available, so use it!
-      if OriFirstThunkRVA <> 0 then
+      for Fn in Lib.Functions do
       begin
-        FirstThunkRVA := OriFirstThunkRVA;
+
+        if Fn.Name <> '' then
+          Methods.Add(Fn.Name)
+        else
+          Methods.Add(IntTOStr(Fn.Ordinal));
+
+        inc(rva, Img.ImageWordSize);
       end;
 
-      Count_API := -1;
-      repeat
-        // All Functions from DLL
-        Count_API := Count_API + 1;
-        SourceFile.Seek(RVA2Offset(FirstThunkRVA, fFileName) + Count_API * 4,
-          soFromBeginning);
-
-        SourceFile.ReadData(d, 4);
-        if d = $00000000 then
-          break;
-
-        ordflag := $00000000;
-
-        // Check for ordinal import
-        SourceFile.Seek(RVA2Offset(FirstThunkRVA, fFileName) + Count_API * 4 +
-          2, soFromBeginning);
-        SourceFile.ReadData(ordflag, 2);
-
-        // If was ordinal import , add ordinal number to imported methods
-        if ordflag = $8000 then
-        begin
-          SourceFile.Seek(RVA2Offset(FirstThunkRVA, fFileName) + Count_API * 4,
-            soFromBeginning);
-          SourceFile.ReadData(Hint1, 2);
-
-          Methods.Add(Format('Ordinal Import : %d', [Hint1]));
-        end
-        else // If not ordinal import , get the method name
-        begin
-          SourceFile.Seek(RVA2Offset(d, fFileName), soFromBeginning);
-          SourceFile.ReadData(Hint1, 2);
-
-          // Get given DLL methods
-          CurrentAPIName := '';
-          repeat
-            SourceFile.ReadData(temp, 1);
-            CurrentAPIName := CurrentAPIName + Chr(temp);
-          until temp = 0;
-
-          // Delete #0 character from end of method name
-          Delete(CurrentAPIName, Length(CurrentAPIName), 1);
-
-          // Check API name not empty
-          if (CurrentAPIName <> '') then
-            Methods.Add(UTF8ToString(CurrentAPIName));
-        end;
-      until d = $0000;
-    until (NameRVA = 0);
+      inc(rva, Img.ImageWordSize); // null
+    end;
   finally
-    SourceFile.Free;
+    Img.Free;
   end;
 end;
 
