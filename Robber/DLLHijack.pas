@@ -21,7 +21,8 @@ type
   /// </remarks>
   TDLLHijack = class
   private
-    fFileName: string;
+    _FileName: string;
+    Img: TPEImage;
   public
     /// <summary>
     /// Create TDLLHijack class for work with pe information of given file
@@ -30,6 +31,7 @@ type
     /// Class must get PE information of given file
     /// </param>
     constructor Create(const FileName: string);
+    destructor Destroy;
 
     function IsX86Image: Boolean;
 
@@ -100,21 +102,24 @@ implementation
 
 constructor TDLLHijack.Create(const FileName: string);
 begin
-  fFileName := FileName;
+  _FileName := FileName;
+
+  Img := TPEImage.Create;
+  Img.LoadFromFile(FileName);
+end;
+
+destructor TDLLHijack.Destroy;
+begin
+  if (Img <> nil) then
+  begin
+    Img.Free;
+    Img := nil;
+  end;
 end;
 
 function TDLLHijack.GetFileSize: Cardinal;
-var
-  MyFile: TMemoryStream;
 begin
-  // Get given file size in KB scale
-  MyFile := TMemoryStream.Create;
-  try
-    MyFile.LoadFromFile(fFileName);
-    Result := MyFile.Size div 1024;
-  finally
-    MyFile.Free;
-  end;
+  Result := Img.SizeOfImage div 1024;
 end;
 
 procedure TDLLHijack.GetImportedDLL(DLLs: TStrings);
@@ -122,40 +127,25 @@ var
   Lib: TPEImportLibrary;
   Fn: TPEImportFunction;
   rva: TRVA;
-  Img: TPEImage;
 begin
   DLLs.Clear;
 
-  Img := TPEImage.Create;
-  try
-    Img.LoadFromFile(fFileName);
+  for Lib in Img.Imports.Libs do
+  begin
+    DLLs.Add(Lib.Name);
 
-    for Lib in Img.Imports.Libs do
-    begin
-      DLLs.Add(Lib.Name);
+    rva := Lib.IatRva;
 
-      rva := Lib.IatRva;
-
-      inc(rva, Img.ImageWordSize); // null
-    end;
-  finally
-    Img.Free;
+    inc(rva, Img.ImageWordSize); // null
   end;
 end;
 
 function TDLLHijack.IsX86Image: Boolean;
-var
-  Img: TPEImage;
 begin
-  Img := TPEImage.Create;
-  try
-    if (Img.Is32bit) then
-      Exit(True);
+  if (Img.Is32bit) then
+    Exit(True);
 
-    Exit(False);
-  finally
-    Img.Free;
-  end;
+  Exit(False);
 end;
 
 procedure TDLLHijack.GetHijackableImportedDLL(DLLs: TStrings);
@@ -164,7 +154,7 @@ var
 begin
   GetImportedDLL(DLLs);
   for DLLCount := DLLs.Count - 1 downto 0 do
-    if not(FileExists(ExtractFilePath(fFileName) + DLLs[DLLCount])) then
+    if not(FileExists(ExtractFilePath(_FileName) + DLLs[DLLCount])) then
       DLLs.Delete(DLLCount);
 end;
 
@@ -204,36 +194,28 @@ var
   Lib: TPEImportLibrary;
   Fn: TPEImportFunction;
   rva: TRVA;
-  Img: TPEImage;
 begin
   Methods.Clear;
 
-  Img := TPEImage.Create;
-  try
-    Img.LoadFromFile(fFileName);
+  for Lib in Img.Imports.Libs do
+  begin
+    if (Lib.Name <> DLLName) then
+      Continue;
 
-    for Lib in Img.Imports.Libs do
+    rva := Lib.IatRva;
+
+    for Fn in Lib.Functions do
     begin
-      if (Lib.Name <> DLLName) then
-        Continue;
 
-      rva := Lib.IatRva;
+      if Fn.Name <> '' then
+        Methods.Add(Fn.Name)
+      else
+        Methods.Add(IntTOStr(Fn.Ordinal));
 
-      for Fn in Lib.Functions do
-      begin
-
-        if Fn.Name <> '' then
-          Methods.Add(Fn.Name)
-        else
-          Methods.Add(IntTOStr(Fn.Ordinal));
-
-        inc(rva, Img.ImageWordSize);
-      end;
-
-      inc(rva, Img.ImageWordSize); // null
+      inc(rva, Img.ImageWordSize);
     end;
-  finally
-    Img.Free;
+
+    inc(rva, Img.ImageWordSize); // null
   end;
 end;
 
