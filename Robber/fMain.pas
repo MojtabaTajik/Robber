@@ -214,7 +214,8 @@ begin
         PEFile.Free;
       end;
     except
-
+      if (PEFile <> nil) then
+        PEFile.Free;
     end;
     Application.ProcessMessages;
   end;
