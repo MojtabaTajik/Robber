@@ -133,86 +133,89 @@ begin
   for EachFile in TDirectory.GetFiles(edSearchPath.Text, '*.exe',
     TSearchOption.soAllDirectories) do
   begin
-    IsSigned := false;
-    //
-    ImportDLLs := TStringList.Create;
-    PEFile := TDLLHijack.Create(EachFile);
-    Signature := TDigitalSignature.Create(EachFile);
     try
-      PEFile.GetHijackableImportedDLL(ImportDLLs);
-      if (ImportDLLs.Count = 0) then
-        Continue
-      else
-      begin
-        // Check must scan signed applications or all applications
-        if (rbScanSigned.Checked) then
-        begin
-          IsSigned := Signature.IsCodeSigned;
-          if (IsSigned = false) then
-            Continue;
-        end;
-
-        App := tvApplication.Items.Add(nil, EachFile);
-
-        FileSize := PEFile.GetFileSize;
-        Scale := tvApplication.Items.AddChild(App, Format('File Size : %d KB',
-          [FileSize]));
-        Scale.ImageIndex := 1;
-        Scale.SelectedIndex := Scale.ImageIndex;
-
-        // Image type (x86, x64)
-
-        if (PEFile.IsX86Image = true) then
-          ImageTypeString := 'x86'
+      IsSigned := false;
+      //
+      ImportDLLs := TStringList.Create;
+      PEFile := TDLLHijack.Create(EachFile);
+      Signature := TDigitalSignature.Create(EachFile);
+      try
+        PEFile.GetHijackableImportedDLL(ImportDLLs);
+        if (ImportDLLs.Count = 0) then
+          Continue
         else
-          ImageTypeString := 'x64';
-
-        ImageType := tvApplication.Items.AddChild(App,
-          Format('ImageType : %s', [ImageTypeString]));
-        ImageType.ImageIndex := 8;
-        ImageType.SelectedIndex := ImageType.ImageIndex;
-
-        // Check application signed or user select scan all applications and
-        // ShowSigner checkbox checked then add Sign By node to application node
-        if (IsSigned = true) OR (rbScanAll.Checked) then
         begin
-          SignerCompany := Signature.SignerCompany;
-          if (Trim(SignerCompany) <> '') then
+          // Check must scan signed applications or all applications
+          if (rbScanSigned.Checked) then
           begin
-            Sign := tvApplication.Items.AddChild(App,
-              Format('Sign by : %s', [SignerCompany]));
-            Sign.ImageIndex := 7;
-            Sign.SelectedIndex := Sign.ImageIndex;
+            IsSigned := Signature.IsCodeSigned;
+            if (IsSigned = false) then
+              Continue;
+          end;
+
+          App := tvApplication.Items.Add(nil, EachFile);
+
+          FileSize := PEFile.GetFileSize;
+          Scale := tvApplication.Items.AddChild(App, Format('File Size : %d KB',
+            [FileSize]));
+          Scale.ImageIndex := 1;
+          Scale.SelectedIndex := Scale.ImageIndex;
+
+          // Image type (x86, x64)
+
+          if (PEFile.IsX86Image = true) then
+            ImageTypeString := 'x86'
+          else
+            ImageTypeString := 'x64';
+
+          ImageType := tvApplication.Items.AddChild(App,
+            Format('ImageType : %s', [ImageTypeString]));
+          ImageType.ImageIndex := 8;
+          ImageType.SelectedIndex := ImageType.ImageIndex;
+
+          // Check application signed or user select scan all applications and
+          // ShowSigner checkbox checked then add Sign By node to application node
+          if (IsSigned = true) OR (rbScanAll.Checked) then
+          begin
+            SignerCompany := Signature.SignerCompany;
+            if (Trim(SignerCompany) <> '') then
+            begin
+              Sign := tvApplication.Items.AddChild(App,
+                Format('Sign by : %s', [SignerCompany]));
+              Sign.ImageIndex := 7;
+              Sign.SelectedIndex := Sign.ImageIndex;
+            end;
           end;
         end;
-      end;
 
-      // Rate current application to hijack :D
-      case PEFile.GetHijackRate of
-        hrGood:
-          App.ImageIndex := 4;
-        hrMedium:
-          App.ImageIndex := 5;
-        hrBad:
-          App.ImageIndex := 6;
-      end;
-      App.SelectedIndex := App.ImageIndex;
-
-      // Check DLL is inside current application , if exists show it
-      for DLLName in ImportDLLs do
-        if (FileExists(ExtractFilePath(EachFile) + DLLName)) then
-        begin
-          DLLs := tvApplication.Items.AddChild(App, DLLName);
-          DLLs.ImageIndex := 2;
-          DLLs.SelectedIndex := DLLs.ImageIndex;
+        // Rate current application to hijack :D
+        case PEFile.GetHijackRate of
+          hrGood:
+            App.ImageIndex := 4;
+          hrMedium:
+            App.ImageIndex := 5;
+          hrBad:
+            App.ImageIndex := 6;
         end;
-      Application.ProcessMessages;
-    finally
-      Signature.Free;
-      ImportDLLs.Free;
-      PEFile.Free;
-    end;
+        App.SelectedIndex := App.ImageIndex;
 
+        // Check DLL is inside current application , if exists show it
+        for DLLName in ImportDLLs do
+          if (FileExists(ExtractFilePath(EachFile) + DLLName)) then
+          begin
+            DLLs := tvApplication.Items.AddChild(App, DLLName);
+            DLLs.ImageIndex := 2;
+            DLLs.SelectedIndex := DLLs.ImageIndex;
+          end;
+        Application.ProcessMessages;
+      finally
+        Signature.Free;
+        ImportDLLs.Free;
+        PEFile.Free;
+      end;
+    except
+
+    end;
     Application.ProcessMessages;
   end;
 end;
