@@ -31,7 +31,7 @@ type
     /// Class must get PE information of given file
     /// </param>
     constructor Create(const FileName: string);
-    destructor Destroy;
+    destructor Destroy; override;
 
     function IsX86Image: Boolean;
 
