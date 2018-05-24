@@ -111,10 +111,7 @@ end;
 destructor TDLLHijack.Destroy;
 begin
   if (Img <> nil) then
-  begin
-    Img.Free;
-    Img := nil;
-  end;
+    FreeAndNil(Img);
 end;
 
 function TDLLHijack.GetFileSize: Cardinal;

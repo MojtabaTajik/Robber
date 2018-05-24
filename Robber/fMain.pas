@@ -214,8 +214,7 @@ begin
         PEFile.Free;
       end;
     except
-      if (PEFile <> nil) then
-        PEFile.Free;
+      // Handle any exception like AccessDenied here
     end;
     Application.ProcessMessages;
   end;
