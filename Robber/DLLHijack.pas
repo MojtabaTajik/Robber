@@ -214,6 +214,9 @@ begin
 
     for Lib in Img.Imports.Libs do
     begin
+      if (Lib.Name <> DLLName) then
+        Continue;
+
       rva := Lib.IatRva;
 
       for Fn in Lib.Functions do
