@@ -31,6 +31,8 @@ type
     /// </param>
     constructor Create(const FileName: string);
 
+    function IsX86Image: Boolean;
+
     /// <summary>
     /// Return size of given file in KB
     /// </summary>
@@ -136,6 +138,21 @@ begin
 
       inc(rva, Img.ImageWordSize); // null
     end;
+  finally
+    Img.Free;
+  end;
+end;
+
+function TDLLHijack.IsX86Image: Boolean;
+var
+  Img: TPEImage;
+begin
+  Img := TPEImage.Create;
+  try
+    if (Img.Is32bit) then
+      Exit(True);
+
+    Exit(False);
   finally
     Img.Free;
   end;

@@ -3,7 +3,7 @@
         <ProjectGuid>{7A3B08A6-305C-4910-AEFA-29D5003D7CA9}</ProjectGuid>
         <MainSource>Robber.dpr</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Release</Config>
+        <Config Condition="'$(Config)'==''">Debug</Config>
         <TargetedPlatforms>1</TargetedPlatforms>
         <AppType>Application</AppType>
         <FrameworkType>VCL</FrameworkType>
