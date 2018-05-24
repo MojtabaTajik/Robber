@@ -6,7 +6,8 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
   Vcl.StdCtrls, Vcl.Grids, Vcl.ValEdit, Vcl.ComCtrls, FileCtrl, IOUtils,
-  Vcl.ImgList, ShellAPI, ClipBrd, DLLHijack, DigitalSignature, Vcl.Menus;
+  Vcl.ImgList, ShellAPI, ClipBrd, DLLHijack, DigitalSignature, Vcl.Menus,
+  System.TypInfo;
 
 type
   TfrmMain = class(TForm)
@@ -116,7 +117,8 @@ procedure TfrmMain.ScanHijack;
 var
   EachFile: String;
   FileSize: Cardinal;
-  App, DLLs, Scale, Sign: TTreeNode;
+  ImageTypeString: String;
+  App, DLLs, Scale, Sign, ImageType: TTreeNode;
 
   // DLL Hijack
   PEFile: TDLLHijack;
@@ -157,6 +159,18 @@ begin
           [FileSize]));
         Scale.ImageIndex := 1;
         Scale.SelectedIndex := Scale.ImageIndex;
+
+        // Image type (x86, x64)
+
+        if (PEFile.IsX86Image = true) then
+          ImageTypeString := 'x86'
+        else
+          ImageTypeString := 'x64';
+
+        ImageType := tvApplication.Items.AddChild(App,
+          Format('ImageType : %s', [ImageTypeString]));
+        ImageType.ImageIndex := 8;
+        ImageType.SelectedIndex := ImageType.ImageIndex;
 
         // Check application signed or user select scan all applications and
         // ShowSigner checkbox checked then add Sign By node to application node
