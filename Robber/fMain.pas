@@ -16,13 +16,12 @@ type
     imglMain: TImageList;
     miOpenPath: TMenuItem;
     tvApplication: TTreeView;
-    rbScanSigned: TRadioButton;
-    rbScanAll: TRadioButton;
     edSearchPath: TEdit;
     btnScan: TButton;
     btnAbout: TButton;
     btnBrowsePath: TButton;
     rgMustScanImageType: TRadioGroup;
+    rgScanOptions: TRadioGroup;
 
     procedure btnBrowsePathClick(Sender: TObject);
     procedure btnAboutClick(Sender: TObject);
@@ -147,7 +146,7 @@ begin
         else
         begin
           // Check must scan signed applications or all applications
-          if (rbScanSigned.Checked) then
+          if (rgScanOptions.ItemIndex = 1) then
           begin
             IsSigned := Signature.IsCodeSigned;
             if (IsSigned = false) then
@@ -190,7 +189,7 @@ begin
 
           // Check application signed or user select scan all applications and
           // ShowSigner checkbox checked then add Sign By node to application node
-          if (IsSigned = true) OR (rbScanAll.Checked) then
+          if (IsSigned = true) OR (rgScanOptions.ItemIndex = 0) then
           begin
             SignerCompany := Signature.SignerCompany;
             if (Trim(SignerCompany) <> '') then
