@@ -1,10 +1,9 @@
 object frmMain: TfrmMain
   Left = 0
   Top = 0
-  BorderStyle = bsSingle
   Caption = 'Robber'
-  ClientHeight = 544
-  ClientWidth = 837
+  ClientHeight = 547
+  ClientWidth = 827
   Color = clBtnFace
   DoubleBuffered = True
   Font.Charset = DEFAULT_CHARSET
@@ -318,15 +317,15 @@ object frmMain: TfrmMain
   OldCreateOrder = False
   Position = poScreenCenter
   DesignSize = (
-    837
-    544)
+    827
+    547)
   PixelsPerInch = 96
   TextHeight = 13
   object tvApplication: TTreeView
     Left = 8
     Top = 8
-    Width = 821
-    Height = 393
+    Width = 811
+    Height = 396
     Anchors = [akLeft, akTop, akRight, akBottom]
     Color = clWhite
     Font.Charset = DEFAULT_CHARSET
@@ -341,73 +340,61 @@ object frmMain: TfrmMain
     PopupMenu = pumTree
     ReadOnly = True
     TabOrder = 0
-  end
-  object rbScanSigned: TRadioButton
-    Left = 8
-    Top = 486
-    Width = 145
-    Height = 17
-    Anchors = [akLeft, akBottom]
-    Caption = 'Scan signed applications'
-    Checked = True
-    TabOrder = 1
-    TabStop = True
-    ExplicitTop = 455
-  end
-  object rbScanAll: TRadioButton
-    Left = 8
-    Top = 509
-    Width = 145
-    Height = 17
-    Anchors = [akLeft, akBottom]
-    Caption = 'Scan all applications'
-    TabOrder = 2
-    ExplicitTop = 478
+    ExplicitWidth = 821
+    ExplicitHeight = 393
   end
   object edSearchPath: TEdit
     Left = 8
-    Top = 417
-    Width = 733
+    Top = 420
+    Width = 723
     Height = 21
     Anchors = [akLeft, akRight, akBottom]
     ReadOnly = True
-    TabOrder = 3
+    TabOrder = 1
+    ExplicitTop = 417
+    ExplicitWidth = 733
   end
   object btnScan: TButton
-    Left = 754
-    Top = 446
+    Left = 744
+    Top = 449
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'Scan'
     Enabled = False
-    TabOrder = 4
+    TabOrder = 2
     OnClick = btnScanClick
+    ExplicitLeft = 754
+    ExplicitTop = 446
   end
   object btnAbout: TButton
-    Left = 754
-    Top = 478
+    Left = 744
+    Top = 481
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'About'
-    TabOrder = 5
+    TabOrder = 3
     OnClick = btnAboutClick
+    ExplicitLeft = 754
+    ExplicitTop = 478
   end
   object btnBrowsePath: TButton
-    Left = 754
-    Top = 415
+    Left = 744
+    Top = 418
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '...'
-    TabOrder = 6
+    TabOrder = 4
     OnClick = btnBrowsePathClick
+    ExplicitLeft = 754
+    ExplicitTop = 415
   end
   object rgMustScanImageType: TRadioGroup
-    Left = 208
-    Top = 444
-    Width = 121
+    Left = 8
+    Top = 447
+    Width = 161
     Height = 92
     Caption = 'Image Type'
     ItemIndex = 0
@@ -415,7 +402,19 @@ object frmMain: TfrmMain
       'Any'
       'x86 images only'
       'x64 images only')
-    TabOrder = 7
+    TabOrder = 5
+  end
+  object rgScanOptions: TRadioGroup
+    Left = 175
+    Top = 447
+    Width = 161
+    Height = 92
+    Caption = 'Scan Options'
+    ItemIndex = 1
+    Items.Strings = (
+      'Any'
+      'Signed')
+    TabOrder = 6
   end
   object pumTree: TPopupMenu
     Left = 624
@@ -433,7 +432,7 @@ object frmMain: TfrmMain
     Left = 568
     Top = 360
     Bitmap = {
-      494C010109001800DC0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010109001800E00010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000003000000001002000000000000030
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
