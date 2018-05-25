@@ -7,7 +7,7 @@ uses
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
   Vcl.StdCtrls, Vcl.Grids, Vcl.ValEdit, Vcl.ComCtrls, FileCtrl, IOUtils,
   Vcl.ImgList, ShellAPI, ClipBrd, DLLHijack, DigitalSignature, Vcl.Menus,
-  System.TypInfo;
+  System.TypInfo, Vcl.ExtCtrls, ImageTypes;
 
 type
   TfrmMain = class(TForm)
@@ -22,6 +22,7 @@ type
     btnScan: TButton;
     btnAbout: TButton;
     btnBrowsePath: TButton;
+    rgMustScanImageType: TRadioGroup;
 
     procedure btnBrowsePathClick(Sender: TObject);
     procedure btnAboutClick(Sender: TObject);
@@ -29,7 +30,7 @@ type
     procedure miOpenPathClick(Sender: TObject);
     procedure btnScanClick(Sender: TObject);
   private
-    procedure ScanHijack;
+    procedure ScanHijack(ImageType: TImageTypes);
     procedure ScanImportMethods;
     procedure CollapseALLItems;
   public
@@ -68,7 +69,7 @@ begin
   tvApplication.Items.Clear;
 
   // Scan for hijackable executables
-  ScanHijack;
+  ScanHijack(Any);
 
   // Scan method imports of execut
   ScanImportMethods;
@@ -113,12 +114,12 @@ begin
   TfrmAbout.Execute;
 end;
 
-procedure TfrmMain.ScanHijack;
+procedure TfrmMain.ScanHijack(ImageType: TImageTypes);
 var
   EachFile: String;
   FileSize: Cardinal;
   ImageTypeString: String;
-  App, DLLs, Scale, Sign, ImageType: TTreeNode;
+  App, DLLs, Scale, Sign, ImageTypeNode: TTreeNode;
 
   // DLL Hijack
   PEFile: TDLLHijack;
@@ -153,6 +154,21 @@ begin
               Continue;
           end;
 
+          // Check image type that must be scanner
+          case rgMustScanImageType.ItemIndex of
+            1:
+              begin
+                if (PEFile.IsX86Image <> true) then
+                  Continue;
+              end;
+
+            2:
+              begin
+                if (PEFile.IsX86Image = true) then
+                  Continue;
+              end;
+          end;
+
           App := tvApplication.Items.Add(nil, EachFile);
 
           FileSize := PEFile.GetFileSize;
@@ -162,16 +178,15 @@ begin
           Scale.SelectedIndex := Scale.ImageIndex;
 
           // Image type (x86, x64)
-
           if (PEFile.IsX86Image = true) then
             ImageTypeString := 'x86'
           else
             ImageTypeString := 'x64';
 
-          ImageType := tvApplication.Items.AddChild(App,
+          ImageTypeNode := tvApplication.Items.AddChild(App,
             Format('ImageType : %s', [ImageTypeString]));
-          ImageType.ImageIndex := 8;
-          ImageType.SelectedIndex := ImageType.ImageIndex;
+          ImageTypeNode.ImageIndex := 8;
+          ImageTypeNode.SelectedIndex := ImageTypeNode.ImageIndex;
 
           // Check application signed or user select scan all applications and
           // ShowSigner checkbox checked then add Sign By node to application node

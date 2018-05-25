@@ -3,7 +3,7 @@ object frmMain: TfrmMain
   Top = 0
   BorderStyle = bsSingle
   Caption = 'Robber'
-  ClientHeight = 513
+  ClientHeight = 544
   ClientWidth = 837
   Color = clBtnFace
   DoubleBuffered = True
@@ -319,14 +319,14 @@ object frmMain: TfrmMain
   Position = poScreenCenter
   DesignSize = (
     837
-    513)
+    544)
   PixelsPerInch = 96
   TextHeight = 13
   object tvApplication: TTreeView
     Left = 8
     Top = 8
     Width = 821
-    Height = 403
+    Height = 393
     Anchors = [akLeft, akTop, akRight, akBottom]
     Color = clWhite
     Font.Charset = DEFAULT_CHARSET
@@ -344,7 +344,7 @@ object frmMain: TfrmMain
   end
   object rbScanSigned: TRadioButton
     Left = 8
-    Top = 455
+    Top = 486
     Width = 145
     Height = 17
     Anchors = [akLeft, akBottom]
@@ -352,19 +352,21 @@ object frmMain: TfrmMain
     Checked = True
     TabOrder = 1
     TabStop = True
+    ExplicitTop = 455
   end
   object rbScanAll: TRadioButton
     Left = 8
-    Top = 478
+    Top = 509
     Width = 145
     Height = 17
     Anchors = [akLeft, akBottom]
     Caption = 'Scan all applications'
     TabOrder = 2
+    ExplicitTop = 478
   end
   object edSearchPath: TEdit
     Left = 8
-    Top = 419
+    Top = 417
     Width = 733
     Height = 21
     Anchors = [akLeft, akRight, akBottom]
@@ -373,7 +375,7 @@ object frmMain: TfrmMain
   end
   object btnScan: TButton
     Left = 754
-    Top = 448
+    Top = 446
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -384,7 +386,7 @@ object frmMain: TfrmMain
   end
   object btnAbout: TButton
     Left = 754
-    Top = 480
+    Top = 478
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -393,14 +395,27 @@ object frmMain: TfrmMain
     OnClick = btnAboutClick
   end
   object btnBrowsePath: TButton
-    Left = 753
-    Top = 417
+    Left = 754
+    Top = 415
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '...'
     TabOrder = 6
     OnClick = btnBrowsePathClick
+  end
+  object rgMustScanImageType: TRadioGroup
+    Left = 208
+    Top = 444
+    Width = 121
+    Height = 92
+    Caption = 'Image Type'
+    ItemIndex = 0
+    Items.Strings = (
+      'Any'
+      'x86 images only'
+      'x64 images only')
+    TabOrder = 7
   end
   object pumTree: TPopupMenu
     Left = 624
@@ -418,7 +433,7 @@ object frmMain: TfrmMain
     Left = 568
     Top = 360
     Bitmap = {
-      494C010109001800D80010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010109001800DC0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000003000000001002000000000000030
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
