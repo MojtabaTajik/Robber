@@ -39,7 +39,7 @@ Feauters :
 - Determine executable signer
 - Determine wich referenced DLLs candidate for hijacking
 - Determine exported method names of candidate DLLs
-- Detrmine wich hijacks is suitable for use (executable Size, Signed, number of dependent DLLs) and show theme in diffrent color
+- Configure rules to determine which hijacks is best or good choice for use and show theme in different colors
 
 [Find out latest Robber executable here](https://github.com/MojtabaTajik/Robber/releases)
 
