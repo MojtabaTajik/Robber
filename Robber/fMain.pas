@@ -7,7 +7,7 @@ uses
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
   Vcl.StdCtrls, Vcl.Grids, Vcl.ValEdit, Vcl.ComCtrls, FileCtrl, IOUtils,
   Vcl.ImgList, ShellAPI, ClipBrd, DLLHijack, DigitalSignature, Vcl.Menus,
-  System.TypInfo, Vcl.ExtCtrls, ImageTypes;
+  System.TypInfo, Vcl.ExtCtrls, ImageTypes, Vcl.Samples.Spin, PNGImage;
 
 type
   TfrmMain = class(TForm)
@@ -22,6 +22,15 @@ type
     btnBrowsePath: TButton;
     rgMustScanImageType: TRadioGroup;
     rgScanOptions: TRadioGroup;
+    gbColorConfig: TGroupBox;
+    sedBestChoiceDLLCount: TSpinEdit;
+    sedGoodChoiceExeSize: TSpinEdit;
+    sedGoodChoiceDLLCount: TSpinEdit;
+    sedBestChoiceExeSize: TSpinEdit;
+    lblBestChoice: TLabel;
+    lblGoodChoice: TLabel;
+    iBestChoice: TImage;
+    iGoodChoice: TImage;
 
     procedure btnBrowsePathClick(Sender: TObject);
     procedure btnAboutClick(Sender: TObject);
@@ -129,6 +138,8 @@ var
   Signature: TDigitalSignature;
   IsSigned: Boolean;
   SignerCompany: string;
+
+  HijackRate: THijackRate;
 begin
   for EachFile in TDirectory.GetFiles(edSearchPath.Text, '*.exe',
     TSearchOption.soAllDirectories) do
@@ -203,12 +214,16 @@ begin
         end;
 
         // Rate current application to hijack :D
-        case PEFile.GetHijackRate of
-          hrGood:
+        HijackRate := PEFile.GetHijackRate(sedBestChoiceDLLCount.Value,
+          sedBestChoiceExeSize.Value, sedGoodChoiceDLLCount.Value,
+          sedGoodChoiceExeSize.Value);
+
+        case HijackRate of
+          Best:
             App.ImageIndex := 4;
-          hrMedium:
+          Good:
             App.ImageIndex := 5;
-          hrBad:
+          Bad:
             App.ImageIndex := 6;
         end;
         App.SelectedIndex := App.ImageIndex;

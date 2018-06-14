@@ -11,7 +11,7 @@ uses
   PE.Imports.Func;
 
 type
-  THijackRate = (hrGood, hrMedium, hrBad);
+  THijackRate = (Best, Good, Bad);
 
   /// <summary>
   /// This class can get list of imported DLLs and methods
@@ -72,7 +72,8 @@ type
     /// <returns>
     /// Hijack rat in THijackRte type
     /// </returns>
-    function GetHijackRate: THijackRate;
+    function GetHijackRate(BestChoiceDLLCount, BestChoiceExeSize,
+      GoodChiceDLLCount, GoodChoiceExeSize: Integer): THijackRate;
 
     /// <summary>
     /// Get list of hijackable imported DLLs
@@ -155,7 +156,8 @@ begin
       DLLs.Delete(DLLCount);
 end;
 
-function TDLLHijack.GetHijackRate: THijackRate;
+function TDLLHijack.GetHijackRate(BestChoiceDLLCount, BestChoiceExeSize,
+  GoodChiceDLLCount, GoodChoiceExeSize: Integer): THijackRate;
 var
   DLLCount: Integer;
   ImportedDLL: TStringList;
@@ -171,16 +173,13 @@ begin
     PESize := GetFileSize;
 
     // Check rate using DLL Count & File Size
-    // Good
-    if (DLLCount <= 2) AND (PESize <= 200) then
-      Exit(hrGood);
+    if (DLLCount <= BestChoiceDLLCount) AND (PESize <= BestChoiceExeSize) then
+      Exit(Best);
 
-    // Medium
-    if (DLLCount <= 4) AND (PESize <= 400) then
-      Exit(hrMedium);
+    if (DLLCount <= GoodChiceDLLCount) AND (PESize <= GoodChoiceExeSize) then
+      Exit(Good);
 
-    // Otherwise its bad to hijack
-    Exit(hrBad);
+    Exit(Bad);
   finally
     ImportedDLL.Free;
   end;
