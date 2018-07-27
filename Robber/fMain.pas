@@ -7,7 +7,7 @@ uses
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
   Vcl.StdCtrls, Vcl.Grids, Vcl.ValEdit, Vcl.ComCtrls, FileCtrl, IOUtils,
   Vcl.ImgList, ShellAPI, ClipBrd, DLLHijack, DigitalSignature, Vcl.Menus,
-  System.TypInfo, Vcl.ExtCtrls, ImageTypes, Vcl.Samples.Spin, PNGImage;
+  System.TypInfo, Vcl.ExtCtrls, Vcl.Samples.Spin, PNGImage;
 
 type
   TfrmMain = class(TForm)
@@ -38,7 +38,7 @@ type
     procedure miOpenPathClick(Sender: TObject);
     procedure btnScanClick(Sender: TObject);
   private
-    procedure ScanHijack(ImageType: TImageTypes);
+    procedure ScanHijack();
     procedure ScanImportMethods;
     procedure CollapseALLItems;
   public
@@ -77,7 +77,7 @@ begin
   tvApplication.Items.Clear;
 
   // Scan for hijackable executables
-  ScanHijack(Any);
+  ScanHijack();
 
   // Scan method imports of execut
   ScanImportMethods;
@@ -122,7 +122,7 @@ begin
   TfrmAbout.Execute;
 end;
 
-procedure TfrmMain.ScanHijack(ImageType: TImageTypes);
+procedure TfrmMain.ScanHijack();
 var
   EachFile: String;
   FileSize: Cardinal;
@@ -168,13 +168,13 @@ begin
           case rgMustScanImageType.ItemIndex of
             1:
               begin
-                if (PEFile.IsX86Image <> true) then
+                if (PEFile.IsX86Image = False) then
                   Continue;
               end;
 
             2:
               begin
-                if (PEFile.IsX86Image = true) then
+                if (PEFile.IsX86Image = True) then
                   Continue;
               end;
           end;

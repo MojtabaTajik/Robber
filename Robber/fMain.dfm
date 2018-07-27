@@ -340,7 +340,6 @@ object frmMain: TfrmMain
     PopupMenu = pumTree
     ReadOnly = True
     TabOrder = 0
-    ExplicitWidth = 828
   end
   object edSearchPath: TEdit
     Left = 8
@@ -350,7 +349,6 @@ object frmMain: TfrmMain
     Anchors = [akLeft, akRight, akBottom]
     ReadOnly = True
     TabOrder = 1
-    ExplicitWidth = 740
   end
   object btnScan: TButton
     Left = 787
@@ -362,7 +360,6 @@ object frmMain: TfrmMain
     Enabled = False
     TabOrder = 2
     OnClick = btnScanClick
-    ExplicitLeft = 761
   end
   object btnAbout: TButton
     Left = 787
@@ -373,7 +370,6 @@ object frmMain: TfrmMain
     Caption = 'About'
     TabOrder = 3
     OnClick = btnAboutClick
-    ExplicitLeft = 761
   end
   object btnBrowsePath: TButton
     Left = 787
@@ -384,7 +380,6 @@ object frmMain: TfrmMain
     Caption = '...'
     TabOrder = 4
     OnClick = btnBrowsePathClick
-    ExplicitLeft = 761
   end
   object rgMustScanImageType: TRadioGroup
     Left = 8
@@ -589,7 +584,7 @@ object frmMain: TfrmMain
     Left = 568
     Top = 360
     Bitmap = {
-      494C010109001800EC0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010109001800F00010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000003000000001002000000000000030
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
