@@ -4,8 +4,8 @@ object frmAbout: TfrmAbout
   BorderIcons = []
   BorderStyle = bsSingle
   Caption = 'About'
-  ClientHeight = 257
-  ClientWidth = 560
+  ClientHeight = 304
+  ClientWidth = 600
   Color = clBtnFace
   DoubleBuffered = True
   Font.Charset = DEFAULT_CHARSET
@@ -19,8 +19,8 @@ object frmAbout: TfrmAbout
   PixelsPerInch = 96
   TextHeight = 13
   object imgLogo: TImage
-    Left = 17
-    Top = 18
+    Left = 25
+    Top = 203
     Width = 48
     Height = 47
     Picture.Data = {
@@ -130,131 +130,78 @@ object frmAbout: TfrmAbout
       86DF8B574FCE85FE0BAD42C6ECDF9F5AF40000000049454E44AE426082}
     OnClick = FormClick
   end
-  object pAbout: TPanel
-    Left = 111
-    Top = 264
-    Width = 442
-    Height = 544
-    BevelOuter = bvNone
+  object lblAppTitle: TLabel
+    Left = 25
+    Top = 256
+    Width = 59
+    Height = 19
+    Caption = 'Robber'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = [fsBold]
+    ParentFont = False
+  end
+  object lblVersion: TLabel
+    Left = 25
+    Top = 281
+    Width = 51
+    Height = 13
+    Caption = 'Version : '
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = [fsBold]
+    ParentFont = False
+  end
+  object GroupBox1: TGroupBox
+    Left = 144
+    Top = 8
+    Width = 448
+    Height = 288
     TabOrder = 0
-    object lblAppTitle: TLabel
-      Left = 24
-      Top = 18
-      Width = 59
-      Height = 19
-      Caption = 'Robber'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -16
-      Font.Name = 'Tahoma'
-      Font.Style = [fsBold]
-      ParentFont = False
-    end
-    object lblVersion: TLabel
-      Left = 24
-      Top = 55
-      Width = 51
-      Height = 13
-      Caption = 'Version : '
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'Tahoma'
-      Font.Style = [fsBold]
-      ParentFont = False
-    end
-    object memLicense: TMemo
-      Left = 24
-      Top = 88
-      Width = 417
-      Height = 449
-      BorderStyle = bsNone
-      Color = clBtnFace
-      Lines.Strings = (
-        'Robberr is a tool for finding DLLs prone to hijacking'
-        'Written by Felony'
-        ''
-        'Copyright (c) 2015, Felony'
-        'All rights reserved.'
-        ''
-        
-          'Redistribution and use in source and binary forms, with or witho' +
-          'ut'
-        
-          'modification, are permitted provided that the following conditio' +
-          'ns are met:'
-        ''
-        
-          '1. Redistributions of source code must retain the above copyrigh' +
-          't'
-        '   notice, this list of conditions and the following disclaimer.'
-        ''
-        
-          '2. Redistributions in binary form must reproduce the above copyr' +
-          'ight'
-        
-          '   notice, this list of conditions and the following disclaimer ' +
-          'in the'
-        
-          '   documentation and/or other materials provided with the distri' +
-          'bution.'
-        ''
-        
-          '3. All advertising materials mentioning features or use of this ' +
-          'software'
-        '   must display the following acknowledgement:'
-        '   This product includes software developed by the Felony.'
-        ''
-        '4. Neither the name of the Felony nor the'
-        
-          '   names of its contributors may be used to endorse or promote p' +
-          'roducts'
-        
-          '   derived from this software without specific prior written per' +
-          'mission.'
-        ''
-        'THIS SOFTWARE IS PROVIDED BY Felony '#39#39'AS IS'#39#39' AND ANY'
-        
-          'EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, TH' +
-          'E '
-        'IMPLIED'
-        
-          'WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPO' +
-          'SE '
-        'ARE'
-        'DISCLAIMED. IN NO EVENT SHALL Felony BE LIABLE FOR ANY'
-        
-          'DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTI' +
-          'AL '
-        'DAMAGES'
-        
-          '(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS ' +
-          'OR '
-        'SERVICES;'
-        
-          'LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER' +
-          ' '
-        'CAUSED AND'
-        
-          'ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILIT' +
-          'Y, OR '
-        'TORT'
-        
-          '(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF TH' +
-          'E USE '
-        'OF '
-        
-          'THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE' +
-          '.')
-      ReadOnly = True
-      TabOrder = 0
-      OnClick = FormClick
+    object lblLicense: TLabel
+      Left = 27
+      Top = 287
+      Width = 405
+      Height = 533
+      Caption = 
+        'Robberr is a tool for finding DLLs prone to hijacking'#13#10'Written b' +
+        'y Felony'#13#10#13#10'Copyright (c) 2015, Felony'#13#10'All rights reserved.'#13#10#13#10 +
+        'Redistribution and use in source and binary forms, with or witho' +
+        'ut'#13#10'modification, are permitted provided that the following cond' +
+        'itions are met:'#13#10#13#10'1. Redistributions of source code must retain' +
+        ' the above copyright'#13#10'   notice, this list of conditions and the' +
+        ' following disclaimer.'#13#10#13#10'2. Redistributions in binary form must' +
+        ' reproduce the above copyright'#13#10'   notice, this list of conditio' +
+        'ns and the following disclaimer in the'#13#10'   documentation and/or ' +
+        'other materials provided with the distribution.'#13#10#13#10'3. All advert' +
+        'ising materials mentioning features or use of this software'#13#10'   ' +
+        'must display the following acknowledgement:'#13#10'   This product inc' +
+        'ludes software developed by the Felony.'#13#10#13#10'4. Neither the name o' +
+        'f the Felony nor the'#13#10'   names of its contributors may be used t' +
+        'o endorse or promote products'#13#10'   derived from this software wit' +
+        'hout specific prior written permission.'#13#10#13#10'THIS SOFTWARE IS PROV' +
+        'IDED BY Felony '#39#39'AS IS'#39#39' AND ANY'#13#10'EXPRESS OR IMPLIED WARRANTIES,' +
+        ' INCLUDING, BUT NOT LIMITED TO, THE '#13#10'IMPLIED'#13#10'WARRANTIES OF MER' +
+        'CHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE '#13#10'ARE'#13#10'DISCLAI' +
+        'MED. IN NO EVENT SHALL Felony BE LIABLE FOR ANY'#13#10'DIRECT, INDIREC' +
+        'T, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL '#13#10'DAMAGES'#13#10'(' +
+        'INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS O' +
+        'R '#13#10'SERVICES;'#13#10'LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERR' +
+        'UPTION) HOWEVER '#13#10'CAUSED AND'#13#10'ON ANY THEORY OF LIABILITY, WHETHE' +
+        'R IN CONTRACT, STRICT LIABILITY, OR '#13#10'TORT'#13#10'(INCLUDING NEGLIGENC' +
+        'E OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE '#13#10'OF '#13#10'THIS SO' +
+        'FTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.'
+      WordWrap = True
     end
   end
   object tScrollAbout: TTimer
     Interval = 40
     OnTimer = tScrollAboutTimer
-    Left = 16
-    Top = 208
+    Left = 40
+    Top = 8
   end
 end

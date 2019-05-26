@@ -73,13 +73,14 @@
         <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+        <VerInfo_Release>10</VerInfo_Release>
         <VerInfo_Build>1</VerInfo_Build>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <AppEnableAdministrator>true</AppEnableAdministrator>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_MinorVer>6</VerInfo_MinorVer>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-        <VerInfo_Keys>CompanyName=Felony;FileDescription=DLL Hijack Finder;FileVersion=1.6.0.1;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=DLL Robber;ProductName=DLL Robber;ProductVersion=1.6.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Felony;FileDescription=DLL Hijack Finder;FileVersion=1.6.10.1;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=DLL Robber;ProductName=DLL Robber;ProductVersion=1.6.10.1;Comments=</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>

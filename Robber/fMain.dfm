@@ -2,7 +2,7 @@ object frmMain: TfrmMain
   Left = 0
   Top = 0
   Caption = 'Robber'
-  ClientHeight = 625
+  ClientHeight = 640
   ClientWidth = 896
   Color = clBtnFace
   DoubleBuffered = True
@@ -318,12 +318,12 @@ object frmMain: TfrmMain
   Position = poScreenCenter
   DesignSize = (
     896
-    625)
+    640)
   PixelsPerInch = 96
   TextHeight = 13
   object GOptions: TGroupBox
     Left = 8
-    Top = 426
+    Top = 415
     Width = 880
     Height = 191
     Anchors = [akLeft, akRight, akBottom]
@@ -516,18 +516,17 @@ object frmMain: TfrmMain
     end
     object btnBrowsePath: TButton
       Left = 776
-      Top = 30
+      Top = 7
       Width = 91
       Height = 25
       Anchors = [akRight, akBottom]
       Caption = '...'
       TabOrder = 5
       OnClick = btnBrowsePathClick
-      ExplicitTop = 7
     end
     object btnScan: TButton
       Left = 776
-      Top = 61
+      Top = 38
       Width = 91
       Height = 25
       Anchors = [akRight, akBottom]
@@ -535,36 +534,37 @@ object frmMain: TfrmMain
       Enabled = False
       TabOrder = 6
       OnClick = btnScanClick
-      ExplicitTop = 38
     end
     object btnAbout: TButton
       Left = 776
-      Top = 92
+      Top = 69
       Width = 91
       Height = 25
       Anchors = [akRight, akBottom]
       Caption = 'About'
       TabOrder = 7
       OnClick = btnAboutClick
-      ExplicitTop = 69
     end
     object chbTheme: TCheckBox
       Left = 776
       Top = 160
       Width = 71
       Height = 17
+      Anchors = [akRight, akBottom]
       Caption = 'Light'
       TabOrder = 8
       OnClick = chbThemeClick
     end
-    object chbLiveUpdate: TCheckBox
-      Left = 776
-      Top = 137
-      Width = 71
+    object AnalyzeProgress: TProgressBar
+      Left = 17
+      Top = 164
+      Width = 744
       Height = 17
-      Caption = 'Live Update'
-      Checked = True
-      State = cbChecked
+      Anchors = [akLeft, akRight, akBottom]
+      DoubleBuffered = True
+      ParentDoubleBuffered = False
+      MarqueeInterval = 2
+      Step = 1
       TabOrder = 9
     end
   end
@@ -588,13 +588,19 @@ object frmMain: TfrmMain
     ReadOnly = True
     TabOrder = 0
   end
-  object AnalyzeProgress: TProgressBar
-    Left = 25
-    Top = 590
-    Width = 744
-    Height = 17
-    Step = 1
-    TabOrder = 2
+  object StatusBar1: TStatusBar
+    Left = 0
+    Top = 621
+    Width = 896
+    Height = 19
+    Panels = <
+      item
+        Text = 'Status : Ready'
+        Width = 50
+      end>
+    ExplicitLeft = 456
+    ExplicitTop = 320
+    ExplicitWidth = 0
   end
   object pumTree: TPopupMenu
     Left = 624
@@ -612,7 +618,7 @@ object frmMain: TfrmMain
     Left = 568
     Top = 360
     Bitmap = {
-      494C010109001800100110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010109001800180110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000003000000001002000000000000030
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

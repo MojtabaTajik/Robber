@@ -37,7 +37,7 @@ type
     iBadChoice: TImage;
     lblBadChoice: TLabel;
     chbTheme: TCheckBox;
-    chbLiveUpdate: TCheckBox;
+    StatusBar1: TStatusBar;
     AnalyzeProgress: TProgressBar;
     procedure btnBrowsePathClick(Sender: TObject);
     procedure btnAboutClick(Sender: TObject);
@@ -86,13 +86,19 @@ procedure TfrmMain.btnScanClick(Sender: TObject);
 begin
   SetOptionControlsEnableState(False);
 
+   StatusBar1.Panels[0].Text := 'Retrieve file list from disk';
+
   // Scan for hijackable executables
   ScanHijack();
 
   // Scan method imports of execut
+  StatusBar1.Panels[0].Text := 'Scanning DLL methods';
+
   ScanImportMethods;
 
   SetOptionControlsEnableState(True);
+
+  StatusBar1.Panels[0].Text := 'Done';
 
   MessageDlg('Scan compelete', mtInformation, [mbOK], 0);
 end;
@@ -228,12 +234,18 @@ var
   HijackRate: THijackRate;
 begin
   FileList := TDirectory.GetFiles(edSearchPath.Text, '*.exe', TSearchOption.soAllDirectories);
+
+  AnalyzeProgress.Position := 0;
   AnalyzeProgress.Max := Length(FileList);
 
   for EachFile in FileList do
   begin
     try
       AnalyzeProgress.Position := AnalyzeProgress.Position + 1;
+      StatusBar1.Panels[0].Text := Format('Analyze file [%d] of [%d]', [AnalyzeProgress.Position, AnalyzeProgress.Max]);
+
+      Application.ProcessMessages;
+
       // Init
       IsSigned := false;
       ImportDLLs := TStringList.Create;
@@ -390,16 +402,6 @@ begin
     finally
       tvApplication.Items.EndUpdate;
     end;
-
-    if (chbLiveUpdate.Checked = False) then
-    begin
-      tvApplication.Items.BeginUpdate;
-    end;
-  end;
-
-  if (EnableState = True) then
-  begin
-    tvApplication.Items.EndUpdate;
   end;
 end;
 
