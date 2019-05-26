@@ -1,5 +1,5 @@
 unit fMain;
-
+
 interface
 
 uses
@@ -7,7 +7,8 @@ uses
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
   Vcl.StdCtrls, Vcl.Grids, Vcl.ValEdit, Vcl.ComCtrls, FileCtrl, IOUtils,
   Vcl.ImgList, ShellAPI, ClipBrd, DLLHijack, DigitalSignature, Vcl.Menus,
-  System.TypInfo, Vcl.ExtCtrls, Vcl.Samples.Spin, PNGImage, System.ImageList;
+  System.TypInfo, Vcl.ExtCtrls, Vcl.Samples.Spin, PNGImage, System.ImageList,
+  Vcl.Themes;
 
 type
   TfrmMain = class(TForm)
@@ -35,12 +36,15 @@ type
     btnAbout: TButton;
     iBadChoice: TImage;
     lblBadChoice: TLabel;
+    chbTheme: TCheckBox;
+    chbLiveUpdate: TCheckBox;
     procedure btnBrowsePathClick(Sender: TObject);
     procedure btnAboutClick(Sender: TObject);
     procedure miCopyClick(Sender: TObject);
     procedure miOpenPathClick(Sender: TObject);
     procedure btnScanClick(Sender: TObject);
     procedure sedGoodChoiceDLLCountChange(Sender: TObject);
+    procedure chbThemeClick(Sender: TObject);
   private
     procedure ScanHijack();
     procedure ScanImportMethods;
@@ -90,6 +94,26 @@ begin
   SetOptionControlsEnableState(True);
 
   MessageDlg('Scan compelete', mtInformation, [mbOK], 0);
+end;
+
+procedure TfrmMain.chbThemeClick(Sender: TObject);
+var
+  sSKIN: string;
+begin
+  if (chbTheme.Tag = 0) then
+  begin
+    TStyleManager.TrySetStyle('Luna');
+
+    chbTheme.Caption := 'Light';
+    chbTheme.Tag := 1;
+  end
+  else
+  begin
+    TStyleManager.TrySetStyle('TabletDark');
+
+    chbTheme.Caption := 'Dark';
+    chbTheme.Tag := 0;
+  end;
 end;
 
 procedure TfrmMain.miCopyClick(Sender: TObject);
@@ -360,6 +384,16 @@ begin
     finally
       tvApplication.Items.EndUpdate;
     end;
+
+    if (chbLiveUpdate.Checked = False) then
+    begin
+      tvApplication.Items.BeginUpdate;
+    end;
+  end;
+
+  if (EnableState = True) then
+  begin
+    tvApplication.Items.EndUpdate;
   end;
 end;
 
@@ -373,3 +407,4 @@ end;
 
 end.
 
+
