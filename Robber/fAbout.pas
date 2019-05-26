@@ -11,11 +11,11 @@ uses
 type
   TfrmAbout = class(TForm)
     imgLogo: TImage;
-    pAbout: TPanel;
+    tScrollAbout: TTimer;
     lblAppTitle: TLabel;
     lblVersion: TLabel;
-    memLicense: TMemo;
-    tScrollAbout: TTimer;
+    GroupBox1: TGroupBox;
+    lblLicense: TLabel;
     procedure tScrollAboutTimer(Sender: TObject);
     procedure FormClick(Sender: TObject);
   private
@@ -94,8 +94,8 @@ end;
 
 procedure TfrmAbout.tScrollAboutTimer(Sender: TObject);
 begin
-  pAbout.Top := pAbout.Top - 1;
-  if ((pAbout.Top + pAbout.Height) <= 0) then
+  lblLicense.Top := lblLicense.Top - 1;
+  if ((lblLicense.Top + lblLicense.Height) <= 0) then
     Self.ModalResult:= mrOk;
 end;
 
