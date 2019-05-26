@@ -2,7 +2,7 @@ object frmMain: TfrmMain
   Left = 0
   Top = 0
   Caption = 'Robber'
-  ClientHeight = 602
+  ClientHeight = 625
   ClientWidth = 896
   Color = clBtnFace
   DoubleBuffered = True
@@ -318,22 +318,22 @@ object frmMain: TfrmMain
   Position = poScreenCenter
   DesignSize = (
     896
-    602)
+    625)
   PixelsPerInch = 96
   TextHeight = 13
   object GOptions: TGroupBox
     Left = 8
     Top = 426
     Width = 880
-    Height = 168
+    Height = 191
     Anchors = [akLeft, akRight, akBottom]
     TabOrder = 1
     DesignSize = (
       880
-      168)
+      191)
     object rgMustScanImageType: TRadioGroup
       Left = 17
-      Top = 35
+      Top = 36
       Width = 113
       Height = 122
       Anchors = [akLeft, akBottom]
@@ -356,7 +356,7 @@ object frmMain: TfrmMain
     end
     object rgSignState: TRadioGroup
       Left = 136
-      Top = 35
+      Top = 36
       Width = 90
       Height = 122
       Anchors = [akLeft, akBottom]
@@ -516,17 +516,18 @@ object frmMain: TfrmMain
     end
     object btnBrowsePath: TButton
       Left = 776
-      Top = 7
+      Top = 30
       Width = 91
       Height = 25
       Anchors = [akRight, akBottom]
       Caption = '...'
       TabOrder = 5
       OnClick = btnBrowsePathClick
+      ExplicitTop = 7
     end
     object btnScan: TButton
       Left = 776
-      Top = 38
+      Top = 61
       Width = 91
       Height = 25
       Anchors = [akRight, akBottom]
@@ -534,20 +535,22 @@ object frmMain: TfrmMain
       Enabled = False
       TabOrder = 6
       OnClick = btnScanClick
+      ExplicitTop = 38
     end
     object btnAbout: TButton
       Left = 776
-      Top = 69
+      Top = 92
       Width = 91
       Height = 25
       Anchors = [akRight, akBottom]
       Caption = 'About'
       TabOrder = 7
       OnClick = btnAboutClick
+      ExplicitTop = 69
     end
     object chbTheme: TCheckBox
       Left = 776
-      Top = 136
+      Top = 160
       Width = 71
       Height = 17
       Caption = 'Light'
@@ -556,7 +559,7 @@ object frmMain: TfrmMain
     end
     object chbLiveUpdate: TCheckBox
       Left = 776
-      Top = 114
+      Top = 137
       Width = 71
       Height = 17
       Caption = 'Live Update'
@@ -569,7 +572,7 @@ object frmMain: TfrmMain
     Left = 8
     Top = 8
     Width = 880
-    Height = 412
+    Height = 401
     Anchors = [akLeft, akTop, akRight, akBottom]
     Color = clWhite
     Font.Charset = DEFAULT_CHARSET
@@ -584,6 +587,14 @@ object frmMain: TfrmMain
     PopupMenu = pumTree
     ReadOnly = True
     TabOrder = 0
+  end
+  object AnalyzeProgress: TProgressBar
+    Left = 25
+    Top = 590
+    Width = 744
+    Height = 17
+    Step = 1
+    TabOrder = 2
   end
   object pumTree: TPopupMenu
     Left = 624
@@ -601,7 +612,7 @@ object frmMain: TfrmMain
     Left = 568
     Top = 360
     Bitmap = {
-      494C0101090018000C0110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010109001800100110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000003000000001002000000000000030
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

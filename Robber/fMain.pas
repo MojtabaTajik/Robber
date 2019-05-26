@@ -8,7 +8,7 @@ uses
   Vcl.StdCtrls, Vcl.Grids, Vcl.ValEdit, Vcl.ComCtrls, FileCtrl, IOUtils,
   Vcl.ImgList, ShellAPI, ClipBrd, DLLHijack, DigitalSignature, Vcl.Menus,
   System.TypInfo, Vcl.ExtCtrls, Vcl.Samples.Spin, PNGImage, System.ImageList,
-  Vcl.Themes;
+  Vcl.Themes, System.Types;
 
 type
   TfrmMain = class(TForm)
@@ -38,6 +38,7 @@ type
     lblBadChoice: TLabel;
     chbTheme: TCheckBox;
     chbLiveUpdate: TCheckBox;
+    AnalyzeProgress: TProgressBar;
     procedure btnBrowsePathClick(Sender: TObject);
     procedure btnAboutClick(Sender: TObject);
     procedure miCopyClick(Sender: TObject);
@@ -213,6 +214,7 @@ var
   FileSize: Cardinal;
   ImageTypeString: string;
   App, DLLs, Scale, Sign, ImageTypeNode: TTreeNode;
+  FileList: TStringDynArray;
 
   // DLL Hijack
   PEFile: TDLLHijack;
@@ -225,9 +227,13 @@ var
   SignerCompany: string;
   HijackRate: THijackRate;
 begin
-  for EachFile in TDirectory.GetFiles(edSearchPath.Text, '*.exe', TSearchOption.soAllDirectories) do
+  FileList := TDirectory.GetFiles(edSearchPath.Text, '*.exe', TSearchOption.soAllDirectories);
+  AnalyzeProgress.Max := Length(FileList);
+
+  for EachFile in FileList do
   begin
     try
+      AnalyzeProgress.Position := AnalyzeProgress.Position + 1;
       // Init
       IsSigned := false;
       ImportDLLs := TStringList.Create;
