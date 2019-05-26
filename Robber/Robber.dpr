@@ -78,7 +78,7 @@ begin
   //ReportMemoryLeaksOnShutdown:= True;
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
-  TStyleManager.TrySetStyle('Carbon');
+  TStyleManager.TrySetStyle('TabletDark');
   Application.CreateForm(TfrmMain, frmMain);
   Application.Run;
 end.
