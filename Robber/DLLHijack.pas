@@ -11,7 +11,7 @@ uses
   PE.Imports.Func;
 
 type
-  THijackRate = (Best, Good, Bad);
+  THijackRate = (hrBest, hrGood, hrBad);
 
   /// <summary>
   /// This class can get list of imported DLLs and methods
@@ -174,12 +174,12 @@ begin
 
     // Check rate using DLL Count & File Size
     if (DLLCount <= BestChoiceDLLCount) AND (PESize <= BestChoiceExeSize) then
-      Exit(Best);
+      Exit(hrBest);
 
     if (DLLCount <= GoodChiceDLLCount) AND (PESize <= GoodChoiceExeSize) then
-      Exit(Good);
+      Exit(hrGood);
 
-    Exit(Bad);
+    Exit(hrBad);
   finally
     ImportedDLL.Free;
   end;
