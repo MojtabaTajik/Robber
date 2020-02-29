@@ -1,5 +1,6 @@
 # Robber
 **Robber** is a free open source tool developed using Delphi XE2 without any 3rd party dependencies.
+- In Version 1.7 Robber doesn't require administrator rights by default because of new write permission check feature, so if you want to scan somewhere like 'ProgramFiles' you need to run Robber with admin rights.
 
 What is DLL hijacking ?!
 
@@ -40,6 +41,7 @@ Feauters :
 - Determine wich referenced DLLs candidate for hijacking
 - Determine exported method names of candidate DLLs
 - Configure rules to determine which hijacks is best or good choice for use and show theme in different colors
+- Ability to check write permission of executable directory that is a good candidate for hijacking
 
 [Find out latest Robber executable here](https://github.com/MojtabaTajik/Robber/releases)
 
