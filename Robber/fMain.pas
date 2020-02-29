@@ -36,16 +36,15 @@ type
     btnAbout: TButton;
     iBadChoice: TImage;
     lblBadChoice: TLabel;
-    chbTheme: TCheckBox;
     StatusBar1: TStatusBar;
     AnalyzeProgress: TProgressBar;
+    rgbWritePerm: TRadioGroup;
     procedure btnBrowsePathClick(Sender: TObject);
     procedure btnAboutClick(Sender: TObject);
     procedure miCopyClick(Sender: TObject);
     procedure miOpenPathClick(Sender: TObject);
     procedure btnScanClick(Sender: TObject);
     procedure sedGoodChoiceDLLCountChange(Sender: TObject);
-    procedure chbThemeClick(Sender: TObject);
   private
     procedure ScanHijack();
     procedure ScanImportMethods;
@@ -53,6 +52,7 @@ type
     function CheckAbuseCandidateOption(HijackRate: THijackRate): Boolean;
     function CheckImageTypeOption(IsX86Image: Boolean): Boolean;
     function CheckImageSignOption(IsSigned: Boolean): Boolean;
+    function CheckWeakWritePermission(FilePath: string): Boolean;
     procedure SetOptionControlsEnableState(EnableState: Boolean);
   public
     { Public declarations }
@@ -86,7 +86,7 @@ procedure TfrmMain.btnScanClick(Sender: TObject);
 begin
   SetOptionControlsEnableState(False);
 
-   StatusBar1.Panels[0].Text := 'Retrieve file list from disk';
+  StatusBar1.Panels[0].Text := 'Retrieve file list from disk';
 
   // Scan for hijackable executables
   ScanHijack();
@@ -96,31 +96,11 @@ begin
 
   ScanImportMethods;
 
-  SetOptionControlsEnableState(True);
+  SetOptionControlsEnableState(true);
 
   StatusBar1.Panels[0].Text := 'Done';
 
   MessageDlg('Scan compelete', mtInformation, [mbOK], 0);
-end;
-
-procedure TfrmMain.chbThemeClick(Sender: TObject);
-var
-  sSKIN: string;
-begin
-  if (chbTheme.Tag = 0) then
-  begin
-    TStyleManager.TrySetStyle('Luna');
-
-    chbTheme.Caption := 'Light';
-    chbTheme.Tag := 1;
-  end
-  else
-  begin
-    TStyleManager.TrySetStyle('TabletDark');
-
-    chbTheme.Caption := 'Dark';
-    chbTheme.Tag := 0;
-  end;
 end;
 
 procedure TfrmMain.miCopyClick(Sender: TObject);
@@ -143,11 +123,13 @@ begin
 
   // Check if selected file is DLL , combine host application directory + DLL name to get DLL path
   if (ExtractFileExt(SelectedAppDirectorey) = '.dll') then
-    SelectedAppDirectorey := ExtractFilePath(tvApplication.Selected.Parent.Text) + tvApplication.Selected.Text;
+    SelectedAppDirectorey := ExtractFilePath(tvApplication.Selected.Parent.Text)
+      + tvApplication.Selected.Text;
 
   // Check if Selected item exists , explore it's directory in windows explorer and select it int explorer
   if (FileExists(SelectedAppDirectorey)) then
-    ShellExecute(0, nil, PChar('explorer.exe'), PChar('/select, "' + PChar(SelectedAppDirectorey) + '"'), nil, SW_NORMAL);
+    ShellExecute(0, nil, PChar('explorer.exe'),
+      PChar('/select, "' + PChar(SelectedAppDirectorey) + '"'), nil, SW_NORMAL);
 end;
 
 function TfrmMain.CheckAbuseCandidateOption(HijackRate: THijackRate): Boolean;
@@ -169,7 +151,7 @@ begin
         exit(False);
   end;
 
-  Result := True;
+  Result := true;
 end;
 
 function TfrmMain.CheckImageSignOption(IsSigned: Boolean): Boolean;
@@ -179,11 +161,11 @@ begin
       exit(False);
 
     1:
-      if (IsSigned = True) then
+      if (IsSigned = true) then
         exit(False);
   end;
 
-  Result := True;
+  Result := true;
 end;
 
 function TfrmMain.CheckImageTypeOption(IsX86Image: Boolean): Boolean;
@@ -194,7 +176,7 @@ begin
 
     1:
       begin
-        if (IsX86Image = True) then
+        if (IsX86Image = true) then
           exit(False);
       end;
 
@@ -205,7 +187,40 @@ begin
       end;
   end;
 
-  Result := True;
+  Result := true;
+end;
+
+function TfrmMain.CheckWeakWritePermission(FilePath: string): Boolean;
+const
+  TempFileName: string = 'RobberWriteCheck.txt';
+var
+  DirPath: string;
+  TempFilePath: String;
+  FS: TFileStream;
+begin
+  // Any permission
+  if (rgbWritePerm.ItemIndex = 0) then
+    exit(False);
+
+  // Check weak permission
+  DirPath := TPath.GetDirectoryName(FilePath);
+  TempFilePath := TPath.Combine(DirPath, TempFileName);
+
+  try
+    FS := TFile.Create(TempFilePath);
+    try
+      if (FS <> nil) then
+        exit(False)
+      else
+        exit(true);
+    finally
+      FS.Free;
+      TFile.Delete(TempFilePath);
+    end;
+  except
+    on E: Exception do
+      exit(true);
+  end;
 end;
 
 procedure TfrmMain.btnAboutClick(Sender: TObject);
@@ -233,7 +248,8 @@ var
   SignerCompany: string;
   HijackRate: THijackRate;
 begin
-  FileList := TDirectory.GetFiles(edSearchPath.Text, '*.exe', TSearchOption.soAllDirectories);
+  FileList := TDirectory.GetFiles(edSearchPath.Text, '*.exe',
+    TSearchOption.soAllDirectories);
 
   AnalyzeProgress.Position := 0;
   AnalyzeProgress.Max := Length(FileList);
@@ -242,12 +258,13 @@ begin
   begin
     try
       AnalyzeProgress.Position := AnalyzeProgress.Position + 1;
-      StatusBar1.Panels[0].Text := Format('Analyze file [%d] of [%d]', [AnalyzeProgress.Position, AnalyzeProgress.Max]);
+      StatusBar1.Panels[0].Text := Format('Analyze file [%d] of [%d]',
+        [AnalyzeProgress.Position, AnalyzeProgress.Max]);
 
       Application.ProcessMessages;
 
       // Init
-      IsSigned := false;
+      IsSigned := False;
       ImportDLLs := TStringList.Create;
       PEFile := TDLLHijack.Create(EachFile);
       Signature := TDigitalSignature.Create(EachFile);
@@ -260,7 +277,9 @@ begin
           Continue;
 
         // Rate the image for hijack
-        HijackRate := PEFile.GetHijackRate(sedBestChoiceDLLCount.Value, sedBestChoiceExeSize.Value, sedGoodChoiceDLLCount.Value, sedGoodChoiceExeSize.Value);
+        HijackRate := PEFile.GetHijackRate(sedBestChoiceDLLCount.Value,
+          sedBestChoiceExeSize.Value, sedGoodChoiceDLLCount.Value,
+          sedGoodChoiceExeSize.Value);
 
         // Check abuse candidate based on user selected options
         if (CheckAbuseCandidateOption(HijackRate)) then
@@ -268,28 +287,34 @@ begin
 
         // Check image type based on user selected options
         if (CheckImageTypeOption(PEFile.IsX86Image)) then
-          continue;
+          Continue;
 
         // Scan signed applications or all applications
         IsSigned := Signature.IsCodeSigned;
         if (CheckImageSignOption(IsSigned)) then
           Continue;
 
+        // Scan weak write permission dirs
+        if (CheckWeakWritePermission(EachFile)) then
+          Continue;
+
         // Add image to list
         App := tvApplication.Items.Add(nil, EachFile);
 
         FileSize := PEFile.GetFileSize;
-        Scale := tvApplication.Items.AddChild(App, Format('File Size : %d KB', [FileSize]));
+        Scale := tvApplication.Items.AddChild(App, Format('File Size : %d KB',
+          [FileSize]));
         Scale.ImageIndex := 1;
         Scale.SelectedIndex := Scale.ImageIndex;
 
         // Image type (x86, x64)
-        if (PEFile.IsX86Image = True) then
+        if (PEFile.IsX86Image = true) then
           ImageTypeString := 'x86'
         else
           ImageTypeString := 'x64';
 
-        ImageTypeNode := tvApplication.Items.AddChild(App, Format('ImageType : %s', [ImageTypeString]));
+        ImageTypeNode := tvApplication.Items.AddChild(App,
+          Format('ImageType : %s', [ImageTypeString]));
         ImageTypeNode.ImageIndex := 8;
         ImageTypeNode.SelectedIndex := ImageTypeNode.ImageIndex;
 
@@ -297,7 +322,8 @@ begin
         SignerCompany := Signature.SignerCompany;
         if (Trim(SignerCompany) <> '') then
         begin
-          Sign := tvApplication.Items.AddChild(App, Format('Sign by : %s', [SignerCompany]));
+          Sign := tvApplication.Items.AddChild(App,
+            Format('Sign by : %s', [SignerCompany]));
           Sign.ImageIndex := 7;
           Sign.SelectedIndex := Sign.ImageIndex;
         end;
@@ -365,7 +391,8 @@ begin
           // List DLL names
           for MethodName in Methods do
           begin
-            Method := tvApplication.Items.AddChild(tvApplication.Selected, MethodName);
+            Method := tvApplication.Items.AddChild(tvApplication.Selected,
+              MethodName);
             Method.ImageIndex := 3;
             Method.SelectedIndex := Method.ImageIndex;
           end;
@@ -386,7 +413,8 @@ end;
 
 procedure TfrmMain.sedGoodChoiceDLLCountChange(Sender: TObject);
 begin
-  lblBadChoice.Caption := Format('DLL Count > %d , EXE Size > %d', [sedGoodChoiceDLLCount.Value, sedGoodChoiceExeSize.Value]);
+  lblBadChoice.Caption := Format('DLL Count > %d , EXE Size > %d',
+    [sedGoodChoiceDLLCount.Value, sedGoodChoiceExeSize.Value]);
 end;
 
 procedure TfrmMain.SetOptionControlsEnableState(EnableState: Boolean);
@@ -414,5 +442,4 @@ begin
 end;
 
 end.
-
 
