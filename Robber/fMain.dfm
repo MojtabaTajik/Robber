@@ -3,7 +3,7 @@ object frmMain: TfrmMain
   Top = 0
   Caption = 'Robber'
   ClientHeight = 640
-  ClientWidth = 896
+  ClientWidth = 1089
   Color = clBtnFace
   DoubleBuffered = True
   Font.Charset = DEFAULT_CHARSET
@@ -317,19 +317,19 @@ object frmMain: TfrmMain
   OldCreateOrder = False
   Position = poScreenCenter
   DesignSize = (
-    896
+    1089
     640)
   PixelsPerInch = 96
   TextHeight = 13
   object GOptions: TGroupBox
     Left = 8
     Top = 415
-    Width = 880
+    Width = 1073
     Height = 191
     Anchors = [akLeft, akRight, akBottom]
     TabOrder = 1
     DesignSize = (
-      880
+      1073
       191)
     object rgMustScanImageType: TRadioGroup
       Left = 17
@@ -348,7 +348,7 @@ object frmMain: TfrmMain
     object edSearchPath: TEdit
       Left = 17
       Top = 9
-      Width = 744
+      Width = 937
       Height = 21
       Anchors = [akLeft, akTop, akRight]
       ReadOnly = True
@@ -382,8 +382,8 @@ object frmMain: TfrmMain
       TabOrder = 3
     end
     object gbColorConfig: TGroupBox
-      Left = 423
-      Top = 36
+      Left = 614
+      Top = 37
       Width = 338
       Height = 121
       Anchors = [akLeft, akBottom]
@@ -515,7 +515,7 @@ object frmMain: TfrmMain
       end
     end
     object btnBrowsePath: TButton
-      Left = 776
+      Left = 969
       Top = 7
       Width = 91
       Height = 25
@@ -525,7 +525,7 @@ object frmMain: TfrmMain
       OnClick = btnBrowsePathClick
     end
     object btnScan: TButton
-      Left = 776
+      Left = 969
       Top = 38
       Width = 91
       Height = 25
@@ -536,7 +536,7 @@ object frmMain: TfrmMain
       OnClick = btnScanClick
     end
     object btnAbout: TButton
-      Left = 776
+      Left = 969
       Top = 69
       Width = 91
       Height = 25
@@ -545,33 +545,35 @@ object frmMain: TfrmMain
       TabOrder = 7
       OnClick = btnAboutClick
     end
-    object chbTheme: TCheckBox
-      Left = 776
-      Top = 160
-      Width = 71
-      Height = 17
-      Anchors = [akRight, akBottom]
-      Caption = 'Light'
-      TabOrder = 8
-      OnClick = chbThemeClick
-    end
     object AnalyzeProgress: TProgressBar
       Left = 17
       Top = 164
-      Width = 744
+      Width = 937
       Height = 17
       Anchors = [akLeft, akRight, akBottom]
       DoubleBuffered = True
       ParentDoubleBuffered = False
       MarqueeInterval = 2
       Step = 1
+      TabOrder = 8
+    end
+    object rgbWritePerm: TRadioGroup
+      Left = 423
+      Top = 36
+      Width = 185
+      Height = 122
+      Caption = 'Directory Write Permission'
+      ItemIndex = 1
+      Items.Strings = (
+        'Any'
+        'Weak')
       TabOrder = 9
     end
   end
   object tvApplication: TTreeView
     Left = 8
     Top = 8
-    Width = 880
+    Width = 1073
     Height = 401
     Anchors = [akLeft, akTop, akRight, akBottom]
     Color = clWhite
@@ -591,16 +593,13 @@ object frmMain: TfrmMain
   object StatusBar1: TStatusBar
     Left = 0
     Top = 621
-    Width = 896
+    Width = 1089
     Height = 19
     Panels = <
       item
         Text = 'Status : Ready'
         Width = 50
       end>
-    ExplicitLeft = 456
-    ExplicitTop = 320
-    ExplicitWidth = 0
   end
   object pumTree: TPopupMenu
     Left = 624
@@ -618,7 +617,7 @@ object frmMain: TfrmMain
     Left = 568
     Top = 360
     Bitmap = {
-      494C010109001800180110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010109001800200110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000003000000001002000000000000030
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
