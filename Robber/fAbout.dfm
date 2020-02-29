@@ -162,6 +162,7 @@ object frmAbout: TfrmAbout
     Width = 448
     Height = 288
     TabOrder = 0
+    OnClick = FormClick
     object lblLicense: TLabel
       Left = 27
       Top = 287
