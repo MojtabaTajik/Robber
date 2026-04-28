@@ -3,7 +3,7 @@ unit DLLHijack;
 interface
 
 uses
-  Windows, SysUtils, Classes, Messages, Winapi.CommDlg,
+  Windows, SysUtils, StrUtils, Classes, Messages, Winapi.CommDlg,
   PE.Common,
   PE.Image,
   PE.ExportSym,
@@ -60,13 +60,13 @@ type
     /// Hijack rate is one of the below value :
     /// </para>
     /// <para>
-    /// hrGood = Hijackable DLLs count must 1 or 2
+    /// hrGood = Hijackable DLLs countï¿½must 1 or 2
     /// </para>
     /// <para>
-    /// hrMedium = Hijackable DLLs count must between 3 and 5
+    /// hrMediumï¿½= Hijackable DLLs count must between 3 and 5
     /// </para>
     /// <para>
-    /// hrBad = Hijackable DLLs count is more than 5
+    /// hrBadï¿½= Hijackable DLLsï¿½count is more than 5
     /// </para>
     /// </summary>
     /// <returns>
@@ -83,7 +83,7 @@ type
     /// </param>
     /// <remarks>
     /// This method use GetImportedDLL internally , finally it delete items
-    /// that contain name of DLL that was not exists inside application
+    /// that contain name of DLLï¿½thatï¿½was not exists inside application
     /// </remarks>
     procedure GetHijackableImportedDLL(DLLs: TStrings);
 
@@ -100,6 +100,16 @@ type
   end;
 
 implementation
+
+function DLLListContains(DLLs: TStrings; const Name: string): Boolean;
+var
+  i: Integer;
+begin
+  for i := 0 to DLLs.Count - 1 do
+    if SameText(DLLs[i], Name) then
+      Exit(True);
+  Result := False;
+end;
 
 constructor TDLLHijack.Create(const FileName: string);
 begin
@@ -123,19 +133,17 @@ end;
 procedure TDLLHijack.GetImportedDLL(DLLs: TStrings);
 var
   Lib: TPEImportLibrary;
-  Fn: TPEImportFunction;
-  rva: TRVA;
 begin
   DLLs.Clear;
 
   for Lib in Img.Imports.Libs do
-  begin
-    DLLs.Add(Lib.Name);
+    if not DLLListContains(DLLs, Lib.Name) then
+      DLLs.Add(Lib.Name);
 
-    rva := Lib.IatRva;
-
-    inc(rva, Img.ImageWordSize); // null
-  end;
+  // Also include delayed imports â€” they are equally hijackable
+  for Lib in Img.ImportsDelayed.Libs do
+    if not DLLListContains(DLLs, Lib.Name) then
+      DLLs.Add(Lib.Name);
 end;
 
 function TDLLHijack.IsX86Image: Boolean;
@@ -189,29 +197,36 @@ procedure TDLLHijack.GetDLLMethods(DLLName: string; Methods: TStrings);
 var
   Lib: TPEImportLibrary;
   Fn: TPEImportFunction;
-  rva: TRVA;
+  FnKey: string;
 begin
   Methods.Clear;
 
   for Lib in Img.Imports.Libs do
   begin
-    if (Lib.Name <> DLLName) then
+    if not SameText(Lib.Name, DLLName) then
       Continue;
-
-    rva := Lib.IatRva;
 
     for Fn in Lib.Functions do
     begin
-
       if Fn.Name <> '' then
         Methods.Add(Fn.Name)
       else
-        Methods.Add(IntTOStr(Fn.Ordinal));
-
-      inc(rva, Img.ImageWordSize);
+        Methods.Add(IntToStr(Fn.Ordinal));
     end;
+  end;
 
-    inc(rva, Img.ImageWordSize); // null
+  // Also collect methods from delayed imports for this DLL
+  for Lib in Img.ImportsDelayed.Libs do
+  begin
+    if not SameText(Lib.Name, DLLName) then
+      Continue;
+
+    for Fn in Lib.Functions do
+    begin
+      FnKey := IfThen(Fn.Name <> '', Fn.Name, IntToStr(Fn.Ordinal));
+      if Methods.IndexOf(FnKey) = -1 then
+        Methods.Add(FnKey);
+    end;
   end;
 end;
 
