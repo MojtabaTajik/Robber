@@ -25,7 +25,7 @@ implementation
 
 uses
   Winapi.Windows, System.SysUtils, System.IOUtils, System.Types,
-  System.Classes, System.Generics.Collections, System.StrUtils,
+  System.Classes, System.Generics.Collections, System.StrUtils, System.Math,
   DLLHijack, DigitalSignature, UAC, DLLSearchOrder, ScanThread, ScanExport;
 
 // ---------------------------------------------------------------------------
@@ -39,7 +39,9 @@ procedure EnsureConsole;
 begin
   if not GConsoleAttached then
   begin
-    GConsoleAttached := AttachConsole(ATTACH_PARENT_PROCESS) or (AllocConsole <> 0);
+    if not AttachConsole(ATTACH_PARENT_PROCESS) then
+      AllocConsole;
+    GConsoleAttached := True;
   end;
 end;
 
