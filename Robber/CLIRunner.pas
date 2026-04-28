@@ -26,7 +26,7 @@ implementation
 uses
   Winapi.Windows, System.SysUtils, System.IOUtils, System.Types,
   System.Classes, System.Generics.Collections, System.StrUtils,
-  DLLHijack, DigitalSignature, UAC;
+  DLLHijack, DigitalSignature, UAC, DLLSearchOrder, ScanThread, ScanExport;
 
 // ---------------------------------------------------------------------------
 // Console I/O
@@ -224,71 +224,15 @@ begin
 end;
 
 // ---------------------------------------------------------------------------
-// System DLL filter (same logic as ScanThread)
-// ---------------------------------------------------------------------------
-
-function BuildSystemDirs: TArray<string>;
-var
-  Buf: array[0..MAX_PATH] of Char;
-  W: string;
-begin
-  GetWindowsDirectory(Buf, MAX_PATH);
-  W := IncludeTrailingPathDelimiter(Buf);
-  Result := [W + 'System32\', W + 'SysWOW64\', W + 'System\'];
-end;
-
-procedure StripSystemDLLs(DLLs: TStrings; const SysDirs: TArray<string>);
-var
-  i: Integer;
-  Dir: string;
-  Found: Boolean;
-begin
-  for i := DLLs.Count - 1 downto 0 do
-  begin
-    Found := False;
-    for Dir in SysDirs do
-      if FileExists(Dir + DLLs[i]) then begin Found := True; Break; end;
-    if Found then DLLs.Delete(i);
-  end;
-end;
-
-// ---------------------------------------------------------------------------
-// Result types
-// ---------------------------------------------------------------------------
-
-type
-  TDLLInfo = record
-    Name: string;
-    Methods: TArray<string>;
-  end;
-
-  TScanHit = record
-    ExePath: string;
-    FileSize: Cardinal;
-    IsX86: Boolean;
-    IsSigned: Boolean;
-    SignerCompany: string;
-    HijackRate: THijackRate;
-    ExecutionLevel: string;
-    DLLs: TArray<TDLLInfo>;
-  end;
-
-function RateStr(R: THijackRate): string;
-begin
-  case R of
-    hrBest: Result := 'Best';
-    hrGood: Result := 'Good';
-    hrBad:  Result := 'Bad';
-  else
-    Result := '';
-  end;
-end;
-
-// ---------------------------------------------------------------------------
 // Scan
 // ---------------------------------------------------------------------------
+//
+// Produces TScanResult records — the same shape used by the GUI scan thread —
+// so JSON / CSV serialisation can be shared via the ScanExport unit. System
+// DLL identification is delegated to DLLSearchOrder.GetSystemDirs /
+// StripSystemDLLs to avoid two divergent implementations of the same logic.
 
-function RunScan(const Opts: TCLIOptions): TArray<TScanHit>;
+function RunScan(const Opts: TCLIOptions): TArray<TScanResult>;
 var
   FileList: TStringDynArray;
   EachFile, DLLName: string;
@@ -297,15 +241,17 @@ var
   ImportDLLs, Methods: TStringList;
   IsSigned: Boolean;
   Rate: THijackRate;
-  Hit: TScanHit;
-  DLLInf: TDLLInfo;
-  DLLList: TList<TDLLInfo>;
-  Hits: TList<TScanHit>;
+  Res: TScanResult;
+  DLLInf: TDLLScanInfo;
+  DLLList: TList<TDLLScanInfo>;
+  Results: TList<TScanResult>;
   SysDirs: TArray<string>;
-  i, Total: Integer;
+  SearchCache: TDictionary<string, Boolean>;
+  i, j, Total: Integer;
 begin
-  SysDirs := BuildSystemDirs;
-  Hits := TList<TScanHit>.Create;
+  SysDirs := DLLSearchOrder.GetSystemDirs;
+  SearchCache := BuildSearchCache;
+  Results := TList<TScanResult>.Create;
   try
     FileList := TDirectory.GetFiles(Opts.ScanPath, '*.exe',
       TSearchOption.soAllDirectories);
@@ -316,13 +262,23 @@ begin
       EachFile := FileList[i];
       Err(Format('[%d/%d] %s', [i + 1, Total, ExtractFileName(EachFile)]));
 
+      // Reset per-iteration record so stale fields can't leak into the
+      // next result if a code path forgets to set one.
+      Res := Default(TScanResult);
+
+      // Initialise to nil so the finally block can safely Free anything
+      // that did get constructed before a constructor raised.
+      ImportDLLs := nil;
+      PEFile := nil;
+      Sig := nil;
       try
-        ImportDLLs := TStringList.Create;
-        PEFile := TDLLHijack.Create(EachFile);
-        Sig := TDigitalSignature.Create(EachFile);
         try
+          ImportDLLs := TStringList.Create;
+          PEFile := TDLLHijack.Create(EachFile);
+          Sig := TDigitalSignature.Create(EachFile);
+
           PEFile.GetHijackableImportedDLL(ImportDLLs);
-          StripSystemDLLs(ImportDLLs, SysDirs);
+          DLLSearchOrder.StripSystemDLLs(ImportDLLs, SysDirs);
           if ImportDLLs.Count = 0 then Continue;
 
           Rate := PEFile.GetHijackRate(Opts.BestDLLCount, Opts.BestExeSize,
@@ -335,16 +291,16 @@ begin
           if SkipBySign(IsSigned, Opts.SignFilter) then Continue;
           if SkipByWritePerm(EachFile, Opts.WritePermFilter) then Continue;
 
-          Hit.ExePath        := EachFile;
-          Hit.FileSize       := PEFile.GetFileSize;
-          Hit.IsX86          := PEFile.IsX86Image;
-          Hit.IsSigned       := IsSigned;
-          Hit.SignerCompany  := Sig.SignerCompany;
-          Hit.HijackRate     := Rate;
-          Hit.ExecutionLevel := GetExecutionLevel(EachFile);
+          Res.ExePath        := EachFile;
+          Res.FileSize       := PEFile.GetFileSize;
+          Res.IsX86          := PEFile.IsX86Image;
+          Res.IsSigned       := IsSigned;
+          Res.SignerCompany  := Sig.SignerCompany;
+          Res.HijackRate     := Rate;
+          Res.ExecutionLevel := GetExecutionLevel(EachFile);
 
           Methods := TStringList.Create;
-          DLLList := TList<TDLLInfo>.Create;
+          DLLList := TList<TDLLScanInfo>.Create;
           try
             for DLLName in ImportDLLs do
             begin
@@ -352,148 +308,32 @@ begin
               PEFile.GetDLLMethods(DLLName, Methods);
               DLLInf.Name := DLLName;
               SetLength(DLLInf.Methods, Methods.Count);
-              var j: Integer;
               for j := 0 to Methods.Count - 1 do
                 DLLInf.Methods[j] := Methods[j];
+              DLLInf.SearchOrder := GetDLLSearchOrder(EachFile, DLLName, SearchCache);
               DLLList.Add(DLLInf);
             end;
-            Hit.DLLs := DLLList.ToArray;
+            Res.DLLs := DLLList.ToArray;
           finally
             Methods.Free;
             DLLList.Free;
           end;
 
-          Hits.Add(Hit);
+          Results.Add(Res);
         finally
           Sig.Free;
-          ImportDLLs.Free;
           PEFile.Free;
+          ImportDLLs.Free;
         end;
       except
-        // Skip unreadable files
+        // Skip unreadable files (access denied, corrupt PE, etc.)
       end;
     end;
 
-    Result := Hits.ToArray;
+    Result := Results.ToArray;
   finally
-    Hits.Free;
-  end;
-end;
-
-// ---------------------------------------------------------------------------
-// Serializers
-// ---------------------------------------------------------------------------
-
-function JSONEsc(const S: string): string;
-begin
-  Result := S
-    .Replace('\', '\\').Replace('"', '\"')
-    .Replace(#13, '\r').Replace(#10, '\n').Replace(#9, '\t');
-end;
-
-function CSVEsc(const S: string): string;
-begin
-  if S.Contains(',') or S.Contains('"') or S.Contains(#10) or S.Contains(#13) then
-    Result := '"' + S.Replace('"', '""') + '"'
-  else
-    Result := S;
-end;
-
-function BuildJSON(const Hits: TArray<TScanHit>): string;
-var
-  SB: TStringBuilder;
-  Hit: TScanHit;
-  DLL: TDLLInfo;
-  M: string;
-  FirstHit, FirstDLL, FirstMethod: Boolean;
-begin
-  SB := TStringBuilder.Create;
-  try
-    SB.AppendLine('[');
-    FirstHit := True;
-    for Hit in Hits do
-    begin
-      if not FirstHit then SB.AppendLine(',');
-      FirstHit := False;
-      SB.AppendLine('  {');
-      SB.AppendLine(Format('    "path": "%s",',         [JSONEsc(Hit.ExePath)]));
-      SB.AppendLine(Format('    "fileSizeKB": %d,',     [Hit.FileSize]));
-      SB.AppendLine(Format('    "architecture": "%s",', [IfThen(Hit.IsX86, 'x86', 'x64')]));
-      SB.AppendLine(Format('    "signed": %s,',         [IfThen(Hit.IsSigned, 'true', 'false')]));
-      SB.AppendLine(Format('    "signer": "%s",',       [JSONEsc(Hit.SignerCompany)]));
-      SB.AppendLine(Format('    "hijackRate": "%s",',     [RateStr(Hit.HijackRate)]));
-      SB.AppendLine(Format('    "executionLevel": "%s",', [JSONEsc(Hit.ExecutionLevel)]));
-      SB.AppendLine('    "dlls": [');
-      FirstDLL := True;
-      for DLL in Hit.DLLs do
-      begin
-        if not FirstDLL then SB.AppendLine(',');
-        FirstDLL := False;
-        SB.AppendLine('      {');
-        SB.AppendLine(Format('        "name": "%s",', [JSONEsc(DLL.Name)]));
-        SB.AppendLine('        "methods": [');
-        FirstMethod := True;
-        for M in DLL.Methods do
-        begin
-          if not FirstMethod then SB.AppendLine(',');
-          FirstMethod := False;
-          SB.Append(Format('          "%s"', [JSONEsc(M)]));
-        end;
-        if Length(DLL.Methods) > 0 then SB.AppendLine('');
-        SB.AppendLine('        ]');
-        SB.Append('      }');
-      end;
-      if Length(Hit.DLLs) > 0 then SB.AppendLine('');
-      SB.AppendLine('    ]');
-      SB.Append('  }');
-    end;
-    SB.AppendLine('');
-    SB.AppendLine(']');
-    Result := SB.ToString;
-  finally
-    SB.Free;
-  end;
-end;
-
-function BuildCSV(const Hits: TArray<TScanHit>): string;
-var
-  Lines: TStringList;
-  Hit: TScanHit;
-  DLL: TDLLInfo;
-  M, Row: string;
-begin
-  Lines := TStringList.Create;
-  try
-    Lines.Add('ExePath,FileSize,Architecture,Signed,Signer,HijackRate,UAC,DLL,Method');
-    for Hit in Hits do
-      for DLL in Hit.DLLs do
-      begin
-        if Length(DLL.Methods) = 0 then
-        begin
-          Lines.Add(
-            CSVEsc(Hit.ExePath) + ',' + IntToStr(Hit.FileSize) + ',' +
-            IfThen(Hit.IsX86, 'x86', 'x64') + ',' +
-            IfThen(Hit.IsSigned, 'true', 'false') + ',' +
-            CSVEsc(Hit.SignerCompany) + ',' + RateStr(Hit.HijackRate) + ',' +
-            Hit.ExecutionLevel + ',' +
-            CSVEsc(DLL.Name) + ',');
-        end
-        else
-          for M in DLL.Methods do
-          begin
-            Row :=
-              CSVEsc(Hit.ExePath) + ',' + IntToStr(Hit.FileSize) + ',' +
-              IfThen(Hit.IsX86, 'x86', 'x64') + ',' +
-              IfThen(Hit.IsSigned, 'true', 'false') + ',' +
-              CSVEsc(Hit.SignerCompany) + ',' + RateStr(Hit.HijackRate) + ',' +
-              Hit.ExecutionLevel + ',' +
-              CSVEsc(DLL.Name) + ',' + CSVEsc(M);
-            Lines.Add(Row);
-          end;
-      end;
-    Result := Lines.Text;
-  finally
-    Lines.Free;
+    Results.Free;
+    SearchCache.Free;
   end;
 end;
 
@@ -504,7 +344,7 @@ end;
 procedure RunCLI;
 var
   Opts: TCLIOptions;
-  Hits: TArray<TScanHit>;
+  Results: TArray<TScanResult>;
   Output, Ext: string;
   IsCSV: Boolean;
 begin
@@ -521,15 +361,15 @@ begin
 
   Err(Format('Scanning: %s', [Opts.ScanPath]));
 
-  Hits := RunScan(Opts);
+  Results := RunScan(Opts);
 
-  Err(Format('Found %d vulnerable executables', [Length(Hits)]));
+  Err(Format('Found %d vulnerable executables', [Length(Results)]));
 
   Ext := LowerCase(ExtractFileExt(Opts.OutputFile));
   IsCSV := Ext = '.csv';
 
-  if IsCSV then Output := BuildCSV(Hits)
-  else           Output := BuildJSON(Hits);
+  if IsCSV then Output := ScanExport.BuildCSV(Results)
+  else           Output := ScanExport.BuildJSON(Results);
 
   if Opts.OutputFile <> '' then
   begin

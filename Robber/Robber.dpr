@@ -8,6 +8,7 @@ uses
   CLIRunner in 'CLIRunner.pas',
   UAC in 'UAC.pas',
   DLLSearchOrder in 'DLLSearchOrder.pas',
+  ScanExport in 'ScanExport.pas',
   Vcl.Themes,
   Vcl.Styles,
   fAbout in 'fAbout.pas' {frmAbout},

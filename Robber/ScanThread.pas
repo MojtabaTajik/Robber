@@ -70,6 +70,13 @@ type
       OnProgress: TOnScanProgress;
       OnResult: TOnScanResult;
       OnDone: TOnScanDone);
+
+    /// <summary>
+    /// Disarm all UI callbacks. Call this before Terminate when the form is
+    /// closing so any in-flight Synchronize calls don't try to touch a
+    /// destroyed form.
+    /// </summary>
+    procedure ClearCallbacks;
   end;
 
 implementation
@@ -162,34 +169,13 @@ begin
   end;
 end;
 
-function SystemDirs: TArray<string>;
-var
-  Buf: array[0..MAX_PATH] of Char;
-  WinDir: string;
+procedure TScanThread.ClearCallbacks;
 begin
-  GetWindowsDirectory(Buf, MAX_PATH);
-  WinDir := IncludeTrailingPathDelimiter(Buf);
-  Result := [WinDir + 'System32\', WinDir + 'SysWOW64\', WinDir + 'System\'];
-end;
-
-procedure StripSystemDLLs(DLLs: TStrings; const SysDirs: TArray<string>);
-var
-  i: Integer;
-  Dir: string;
-  IsSystem: Boolean;
-begin
-  for i := DLLs.Count - 1 downto 0 do
-  begin
-    IsSystem := False;
-    for Dir in SysDirs do
-      if FileExists(Dir + DLLs[i]) then
-      begin
-        IsSystem := True;
-        Break;
-      end;
-    if IsSystem then
-      DLLs.Delete(i);
-  end;
+  // Defensive: detach UI callbacks so any pending Synchronize can't reach
+  // a freed form. Safe to call from the main thread.
+  FOnProgress := nil;
+  FOnResult := nil;
+  FOnDone := nil;
 end;
 
 procedure TScanThread.Execute;
@@ -208,94 +194,108 @@ var
   SysDirs: TArray<string>;
   SearchCache: TDictionary<string, Boolean>;
 begin
-  SysDirs := SystemDirs;
   SearchCache := BuildSearchCache;
+  try
+    SysDirs := GetSystemDirs;
 
-  FileList := TDirectory.GetFiles(FOptions.SearchPath, '*.exe',
-    TSearchOption.soAllDirectories);
+    FileList := TDirectory.GetFiles(FOptions.SearchPath, '*.exe',
+      TSearchOption.soAllDirectories);
 
-  FSyncTotal := Length(FileList);
-  FSyncCurrent := 0;
-  FSyncCancelled := False;
+    FSyncTotal := Length(FileList);
+    FSyncCurrent := 0;
+    FSyncCancelled := False;
 
-  for EachFile in FileList do
-  begin
-    if Terminated then
+    for EachFile in FileList do
     begin
-      FSyncCancelled := True;
-      Break;
-    end;
-
-    Inc(FSyncCurrent);
-    FSyncFileName := EachFile;
-    Synchronize(DoProgress);
-
-    try
-      ImportDLLs := TStringList.Create;
-      PEFile := TDLLHijack.Create(EachFile);
-      Signature := TDigitalSignature.Create(EachFile);
-      try
-        PEFile.GetHijackableImportedDLL(ImportDLLs);
-        StripSystemDLLs(ImportDLLs, SysDirs);
-        if ImportDLLs.Count = 0 then
-          Continue;
-
-        HijackRate := PEFile.GetHijackRate(
-          FOptions.BestChoiceDLLCount, FOptions.BestChoiceExeSize,
-          FOptions.GoodChoiceDLLCount, FOptions.GoodChoiceExeSize);
-
-        if FilterHijackRate(HijackRate) then Continue;
-        if FilterImageType(PEFile.IsX86Image) then Continue;
-
-        IsSigned := Signature.IsCodeSigned;
-        if FilterSign(IsSigned) then Continue;
-        if FilterWritePerm(EachFile) then Continue;
-
-        // Build result record
-        Res.ExePath        := EachFile;
-        Res.FileSize       := PEFile.GetFileSize;
-        Res.IsX86          := PEFile.IsX86Image;
-        Res.IsSigned       := IsSigned;
-        Res.SignerCompany  := Signature.SignerCompany;
-        Res.HijackRate     := HijackRate;
-        Res.ExecutionLevel := GetExecutionLevel(EachFile);
-
-        // Collect DLLs and their methods in one pass
-        Methods := TStringList.Create;
-        DLLInfoList := TList<TDLLScanInfo>.Create;
-        try
-          for DLLName in ImportDLLs do
-          begin
-            Methods.Clear;
-            PEFile.GetDLLMethods(DLLName, Methods);
-            DLLInfo.Name := DLLName;
-            SetLength(DLLInfo.Methods, Methods.Count);
-            for i := 0 to Methods.Count - 1 do
-              DLLInfo.Methods[i] := Methods[i];
-            DLLInfo.SearchOrder := GetDLLSearchOrder(EachFile, DLLName, SearchCache);
-            DLLInfoList.Add(DLLInfo);
-          end;
-          Res.DLLs := DLLInfoList.ToArray;
-        finally
-          Methods.Free;
-          DLLInfoList.Free;
-        end;
-
-        FSyncResult := Res;
-        Synchronize(DoResult);
-
-      finally
-        Signature.Free;
-        ImportDLLs.Free;
-        PEFile.Free;
+      if Terminated then
+      begin
+        FSyncCancelled := True;
+        Break;
       end;
-    except
-      // Skip files we can't read (access denied, corrupt PE, etc.)
+
+      Inc(FSyncCurrent);
+      FSyncFileName := EachFile;
+      Synchronize(DoProgress);
+
+      // Reset per-iteration record so stale fields from a prior iteration
+      // can't leak into this result if a code path forgets to set one.
+      Res := Default(TScanResult);
+
+      // Initialise to nil so the finally block can safely Free anything
+      // that did get constructed, even if a later constructor raised.
+      ImportDLLs := nil;
+      PEFile := nil;
+      Signature := nil;
+      try
+        try
+          ImportDLLs := TStringList.Create;
+          PEFile := TDLLHijack.Create(EachFile);
+          Signature := TDigitalSignature.Create(EachFile);
+
+          PEFile.GetHijackableImportedDLL(ImportDLLs);
+          StripSystemDLLs(ImportDLLs, SysDirs);
+          if ImportDLLs.Count = 0 then
+            Continue;
+
+          HijackRate := PEFile.GetHijackRate(
+            FOptions.BestChoiceDLLCount, FOptions.BestChoiceExeSize,
+            FOptions.GoodChoiceDLLCount, FOptions.GoodChoiceExeSize);
+
+          if FilterHijackRate(HijackRate) then Continue;
+          if FilterImageType(PEFile.IsX86Image) then Continue;
+
+          IsSigned := Signature.IsCodeSigned;
+          if FilterSign(IsSigned) then Continue;
+          if FilterWritePerm(EachFile) then Continue;
+
+          // Build result record
+          Res.ExePath        := EachFile;
+          Res.FileSize       := PEFile.GetFileSize;
+          Res.IsX86          := PEFile.IsX86Image;
+          Res.IsSigned       := IsSigned;
+          Res.SignerCompany  := Signature.SignerCompany;
+          Res.HijackRate     := HijackRate;
+          Res.ExecutionLevel := GetExecutionLevel(EachFile);
+
+          // Collect DLLs and their methods in one pass
+          Methods := TStringList.Create;
+          DLLInfoList := TList<TDLLScanInfo>.Create;
+          try
+            for DLLName in ImportDLLs do
+            begin
+              Methods.Clear;
+              PEFile.GetDLLMethods(DLLName, Methods);
+              DLLInfo.Name := DLLName;
+              SetLength(DLLInfo.Methods, Methods.Count);
+              for i := 0 to Methods.Count - 1 do
+                DLLInfo.Methods[i] := Methods[i];
+              DLLInfo.SearchOrder := GetDLLSearchOrder(EachFile, DLLName, SearchCache);
+              DLLInfoList.Add(DLLInfo);
+            end;
+            Res.DLLs := DLLInfoList.ToArray;
+          finally
+            Methods.Free;
+            DLLInfoList.Free;
+          end;
+
+          FSyncResult := Res;
+          Synchronize(DoResult);
+        finally
+          Signature.Free;
+          PEFile.Free;
+          ImportDLLs.Free;
+        end;
+      except
+        // Skip files we can't read (access denied, corrupt PE, etc.)
+      end;
     end;
+  finally
+    SearchCache.Free;
   end;
 
+  // DoDone must always run so the UI returns to a usable state, even if
+  // the loop exited via an unexpected exception.
   Synchronize(DoDone);
-  SearchCache.Free;
 end;
 
 end.
