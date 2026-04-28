@@ -5,6 +5,7 @@ uses
   fMain in 'fMain.pas' {frmMain},
   DLLHijack in 'DLLHijack.pas',
   ScanThread in 'ScanThread.pas',
+  CLIRunner in 'CLIRunner.pas',
   Vcl.Themes,
   Vcl.Styles,
   fAbout in 'fAbout.pas' {frmAbout},
@@ -77,6 +78,12 @@ uses
 
 begin
   //ReportMemoryLeaksOnShutdown:= True;
+  if IsCLIMode then
+  begin
+    RunCLI;
+    Exit;
+  end;
+
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
   TStyleManager.TrySetStyle('TabletDark');
