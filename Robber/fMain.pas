@@ -235,6 +235,15 @@ begin
       Sign.SelectedIndex := 7;
     end;
 
+    if (Result.ExecutionLevel = 'requireAdministrator') or
+       (Result.ExecutionLevel = 'highestAvailable') then
+    begin
+      var UACNode := tvApplication.Items.AddChild(App,
+        Format('UAC : %s', [Result.ExecutionLevel]));
+      UACNode.ImageIndex := 7;
+      UACNode.SelectedIndex := 7;
+    end;
+
     case Result.HijackRate of
       hrBest: App.ImageIndex := 4;
       hrGood: App.ImageIndex := 5;
@@ -406,7 +415,7 @@ var
 begin
   Lines := TStringList.Create;
   try
-    Lines.Add('ExePath,FileSize,Architecture,Signed,Signer,HijackRate,DLL,Method');
+    Lines.Add('ExePath,FileSize,Architecture,Signed,Signer,HijackRate,UAC,DLL,Method');
 
     for Res in FResults do
       for DLL in Res.DLLs do
@@ -419,6 +428,7 @@ begin
                  IfThen(Res.IsSigned, 'true', 'false') + ',' +
                  CSVEscape(Res.SignerCompany) + ',' +
                  HijackRateStr(Res.HijackRate) + ',' +
+                 Res.ExecutionLevel + ',' +
                  CSVEscape(DLL.Name) + ',';
           Lines.Add(Row);
         end
@@ -431,6 +441,7 @@ begin
                    IfThen(Res.IsSigned, 'true', 'false') + ',' +
                    CSVEscape(Res.SignerCompany) + ',' +
                    HijackRateStr(Res.HijackRate) + ',' +
+                   Res.ExecutionLevel + ',' +
                    CSVEscape(DLL.Name) + ',' +
                    CSVEscape(Method);
             Lines.Add(Row);
@@ -467,7 +478,8 @@ begin
       SB.AppendLine(Format('    "architecture": "%s",', [IfThen(Res.IsX86, 'x86', 'x64')]));
       SB.AppendLine(Format('    "signed": %s,',         [IfThen(Res.IsSigned, 'true', 'false')]));
       SB.AppendLine(Format('    "signer": "%s",',       [JSONEscape(Res.SignerCompany)]));
-      SB.AppendLine(Format('    "hijackRate": "%s",',   [HijackRateStr(Res.HijackRate)]));
+      SB.AppendLine(Format('    "hijackRate": "%s",',     [HijackRateStr(Res.HijackRate)]));
+      SB.AppendLine(Format('    "executionLevel": "%s",', [JSONEscape(Res.ExecutionLevel)]));
       SB.AppendLine('    "dlls": [');
 
       FirstDLL := True;

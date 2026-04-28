@@ -26,7 +26,7 @@ implementation
 uses
   Winapi.Windows, System.SysUtils, System.IOUtils, System.Types,
   System.Classes, System.Generics.Collections, System.StrUtils,
-  DLLHijack, DigitalSignature;
+  DLLHijack, DigitalSignature, UAC;
 
 // ---------------------------------------------------------------------------
 // Console I/O
@@ -269,6 +269,7 @@ type
     IsSigned: Boolean;
     SignerCompany: string;
     HijackRate: THijackRate;
+    ExecutionLevel: string;
     DLLs: TArray<TDLLInfo>;
   end;
 
@@ -334,12 +335,13 @@ begin
           if SkipBySign(IsSigned, Opts.SignFilter) then Continue;
           if SkipByWritePerm(EachFile, Opts.WritePermFilter) then Continue;
 
-          Hit.ExePath     := EachFile;
-          Hit.FileSize    := PEFile.GetFileSize;
-          Hit.IsX86       := PEFile.IsX86Image;
-          Hit.IsSigned    := IsSigned;
-          Hit.SignerCompany := Sig.SignerCompany;
-          Hit.HijackRate  := Rate;
+          Hit.ExePath        := EachFile;
+          Hit.FileSize       := PEFile.GetFileSize;
+          Hit.IsX86          := PEFile.IsX86Image;
+          Hit.IsSigned       := IsSigned;
+          Hit.SignerCompany  := Sig.SignerCompany;
+          Hit.HijackRate     := Rate;
+          Hit.ExecutionLevel := GetExecutionLevel(EachFile);
 
           Methods := TStringList.Create;
           DLLList := TList<TDLLInfo>.Create;
@@ -419,7 +421,8 @@ begin
       SB.AppendLine(Format('    "architecture": "%s",', [IfThen(Hit.IsX86, 'x86', 'x64')]));
       SB.AppendLine(Format('    "signed": %s,',         [IfThen(Hit.IsSigned, 'true', 'false')]));
       SB.AppendLine(Format('    "signer": "%s",',       [JSONEsc(Hit.SignerCompany)]));
-      SB.AppendLine(Format('    "hijackRate": "%s",',   [RateStr(Hit.HijackRate)]));
+      SB.AppendLine(Format('    "hijackRate": "%s",',     [RateStr(Hit.HijackRate)]));
+      SB.AppendLine(Format('    "executionLevel": "%s",', [JSONEsc(Hit.ExecutionLevel)]));
       SB.AppendLine('    "dlls": [');
       FirstDLL := True;
       for DLL in Hit.DLLs do
@@ -461,7 +464,7 @@ var
 begin
   Lines := TStringList.Create;
   try
-    Lines.Add('ExePath,FileSize,Architecture,Signed,Signer,HijackRate,DLL,Method');
+    Lines.Add('ExePath,FileSize,Architecture,Signed,Signer,HijackRate,UAC,DLL,Method');
     for Hit in Hits do
       for DLL in Hit.DLLs do
       begin
@@ -472,6 +475,7 @@ begin
             IfThen(Hit.IsX86, 'x86', 'x64') + ',' +
             IfThen(Hit.IsSigned, 'true', 'false') + ',' +
             CSVEsc(Hit.SignerCompany) + ',' + RateStr(Hit.HijackRate) + ',' +
+            Hit.ExecutionLevel + ',' +
             CSVEsc(DLL.Name) + ',');
         end
         else
@@ -482,6 +486,7 @@ begin
               IfThen(Hit.IsX86, 'x86', 'x64') + ',' +
               IfThen(Hit.IsSigned, 'true', 'false') + ',' +
               CSVEsc(Hit.SignerCompany) + ',' + RateStr(Hit.HijackRate) + ',' +
+              Hit.ExecutionLevel + ',' +
               CSVEsc(DLL.Name) + ',' + CSVEsc(M);
             Lines.Add(Row);
           end;
