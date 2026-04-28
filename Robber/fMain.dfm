@@ -1,16 +1,18 @@
 object frmMain: TfrmMain
   Left = 0
   Top = 0
-  Caption = 'Robber'
+  Caption = 'Robber — DLL Hijack Scanner'
   ClientHeight = 640
   ClientWidth = 1089
   Color = clBtnFace
   DoubleBuffered = True
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'Tahoma'
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
   Font.Style = []
+  Constraints.MinHeight = 500
+  Constraints.MinWidth = 800
   Icon.Data = {
     0000010001003030000001002000A82500001600000028000000300000006000
     0000010020000000000000240000C1000000C10000000000000000000000FFFF
@@ -522,7 +524,7 @@ object frmMain: TfrmMain
       Width = 91
       Height = 25
       Anchors = [akRight, akBottom]
-      Caption = '...'
+      Caption = 'Browse...'
       TabOrder = 5
       OnClick = btnBrowsePathClick
     end
@@ -611,7 +613,7 @@ object frmMain: TfrmMain
     Panels = <
       item
         Text = 'Status : Ready'
-        Width = 50
+        Width = 900
       end>
   end
   object pumTree: TPopupMenu

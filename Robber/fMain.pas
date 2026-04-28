@@ -187,6 +187,7 @@ begin
 
   AnalyzeProgress.Position := 0;
   StatusBar1.Panels[0].Text := 'Starting scan...';
+  Caption := 'Robber — Scanning...';
   FResults.Clear;
   btnExport.Enabled := False;
 
@@ -199,6 +200,7 @@ begin
   begin
     FScanThread.Terminate;
     StatusBar1.Panels[0].Text := 'Cancelling...';
+    Caption := 'Robber — Cancelling...';
     btnScan.Enabled := False;
   end;
 end;
@@ -309,12 +311,16 @@ begin
   btnExport.Enabled := FResults.Count > 0;
   CollapseAllItems;
 
+  Caption := 'Robber — DLL Hijack Scanner';
   if Cancelled then
     StatusBar1.Panels[0].Text := 'Scan cancelled'
   else
   begin
-    StatusBar1.Panels[0].Text := 'Done';
-    MessageDlg('Scan complete', mtInformation, [mbOK], 0);
+    StatusBar1.Panels[0].Text := Format('Scan complete — %d vulnerabilit%s found',
+      [FResults.Count, IfThen(FResults.Count = 1, 'y', 'ies')]);
+    MessageDlg(Format('Scan complete'#13#10'%d vulnerable executable%s found.',
+      [FResults.Count, IfThen(FResults.Count = 1, '', 's')]),
+      mtInformation, [mbOK], 0);
   end;
 end;
 
