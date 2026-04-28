@@ -9,7 +9,7 @@ uses
   Vcl.ImgList, ShellAPI, ClipBrd, DLLHijack, DigitalSignature, Vcl.Menus,
   System.TypInfo, Vcl.ExtCtrls, Vcl.Samples.Spin, PNGImage, System.ImageList,
   Vcl.Themes, System.Types, ScanThread, IniFiles, System.Generics.Collections,
-  System.StrUtils, DLLSearchOrder;
+  System.StrUtils, DLLSearchOrder, ScanExport;
 
 type
   TfrmMain = class(TForm)
@@ -154,8 +154,15 @@ end;
 
 procedure TfrmMain.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
+  // Detach callbacks first so any in-flight Synchronize calls become
+  // no-ops and don't try to access this form after we've started tearing
+  // it down. The thread is FreeOnTerminate, so we just signal Terminate
+  // and let it finish on its own.
   if FScanThread <> nil then
+  begin
+    FScanThread.ClearCallbacks;
     FScanThread.Terminate;
+  end;
   SaveSettings;
   FResults.Free;
 end;
@@ -309,6 +316,8 @@ end;
 
 procedure TfrmMain.miCopyClick(Sender: TObject);
 begin
+  if tvApplication.Selected = nil then
+    Exit;
   Clipboard.Open;
   try
     Clipboard.AsText := tvApplication.Selected.Text;
@@ -321,11 +330,18 @@ procedure TfrmMain.miOpenPathClick(Sender: TObject);
 var
   SelectedPath: string;
 begin
+  if tvApplication.Selected = nil then
+    Exit;
+
   SelectedPath := LowerCase(tvApplication.Selected.Text);
 
   if ExtractFileExt(SelectedPath) = '.dll' then
+  begin
+    if tvApplication.Selected.Parent = nil then
+      Exit;
     SelectedPath := ExtractFilePath(tvApplication.Selected.Parent.Text)
       + tvApplication.Selected.Text;
+  end;
 
   if FileExists(SelectedPath) then
     ShellExecute(0, nil, PChar('explorer.exe'),
@@ -396,170 +412,23 @@ begin
   end;
 end;
 
-function HijackRateStr(Rate: THijackRate): string;
-begin
-  case Rate of
-    hrBest: Result := 'Best';
-    hrGood: Result := 'Good';
-    hrBad:  Result := 'Bad';
-  else
-    Result := '';
-  end;
-end;
-
-function CSVEscape(const S: string): string;
-begin
-  if S.Contains(',') or S.Contains('"') or S.Contains(#10) or S.Contains(#13) then
-    Result := '"' + S.Replace('"', '""') + '"'
-  else
-    Result := S;
-end;
-
-function JSONEscape(const S: string): string;
-begin
-  Result := S
-    .Replace('\', '\\')
-    .Replace('"', '\"')
-    .Replace(#13, '\r')
-    .Replace(#10, '\n')
-    .Replace(#9,  '\t');
-end;
-
 procedure TfrmMain.ExportToCSV(const FilePath: string);
 var
-  Lines: TStringList;
-  Res: TScanResult;
-  DLL: TDLLScanInfo;
-  Method: string;
-  Row: string;
+  Csv: string;
 begin
-  Lines := TStringList.Create;
-  try
-    Lines.Add('ExePath,FileSize,Architecture,Signed,Signer,HijackRate,UAC,DLL,WritableAttackPaths,Method');
-
-    for Res in FResults do
-      for DLL in Res.DLLs do
-      begin
-        var WritablePaths := '';
-        for var SO in DLL.SearchOrder do
-          if SO.Writable then
-            WritablePaths := WritablePaths + IfThen(WritablePaths = '', '', '; ') + SO.Path;
-
-        if Length(DLL.Methods) = 0 then
-        begin
-          Row := CSVEscape(Res.ExePath) + ',' +
-                 IntToStr(Res.FileSize) + ',' +
-                 IfThen(Res.IsX86, 'x86', 'x64') + ',' +
-                 IfThen(Res.IsSigned, 'true', 'false') + ',' +
-                 CSVEscape(Res.SignerCompany) + ',' +
-                 HijackRateStr(Res.HijackRate) + ',' +
-                 Res.ExecutionLevel + ',' +
-                 CSVEscape(DLL.Name) + ',' +
-                 CSVEscape(WritablePaths) + ',';
-          Lines.Add(Row);
-        end
-        else
-          for Method in DLL.Methods do
-          begin
-            Row := CSVEscape(Res.ExePath) + ',' +
-                   IntToStr(Res.FileSize) + ',' +
-                   IfThen(Res.IsX86, 'x86', 'x64') + ',' +
-                   IfThen(Res.IsSigned, 'true', 'false') + ',' +
-                   CSVEscape(Res.SignerCompany) + ',' +
-                   HijackRateStr(Res.HijackRate) + ',' +
-                   Res.ExecutionLevel + ',' +
-                   CSVEscape(DLL.Name) + ',' +
-                   CSVEscape(WritablePaths) + ',' +
-                   CSVEscape(Method);
-            Lines.Add(Row);
-          end;
-      end;
-
-    Lines.SaveToFile(FilePath, TEncoding.UTF8);
-  finally
-    Lines.Free;
-  end;
+  // Convert the TList to a plain array — ScanExport works on arrays so it
+  // can serve both the GUI (TList<TScanResult>) and CLI (TArray<TScanResult>)
+  // without coupling to either container type.
+  Csv := ScanExport.BuildCSV(FResults.ToArray);
+  TFile.WriteAllText(FilePath, Csv, TEncoding.UTF8);
 end;
 
 procedure TfrmMain.ExportToJSON(const FilePath: string);
 var
-  SB: TStringBuilder;
-  Res: TScanResult;
-  DLL: TDLLScanInfo;
-  Method: string;
-  FirstRes, FirstDLL, FirstMethod: Boolean;
+  Json: string;
 begin
-  SB := TStringBuilder.Create;
-  try
-    SB.AppendLine('[');
-    FirstRes := True;
-
-    for Res in FResults do
-    begin
-      if not FirstRes then SB.AppendLine(',');
-      FirstRes := False;
-
-      SB.AppendLine('  {');
-      SB.AppendLine(Format('    "path": "%s",',        [JSONEscape(Res.ExePath)]));
-      SB.AppendLine(Format('    "fileSizeKB": %d,',    [Res.FileSize]));
-      SB.AppendLine(Format('    "architecture": "%s",', [IfThen(Res.IsX86, 'x86', 'x64')]));
-      SB.AppendLine(Format('    "signed": %s,',         [IfThen(Res.IsSigned, 'true', 'false')]));
-      SB.AppendLine(Format('    "signer": "%s",',       [JSONEscape(Res.SignerCompany)]));
-      SB.AppendLine(Format('    "hijackRate": "%s",',     [HijackRateStr(Res.HijackRate)]));
-      SB.AppendLine(Format('    "executionLevel": "%s",', [JSONEscape(Res.ExecutionLevel)]));
-      SB.AppendLine('    "dlls": [');
-
-      FirstDLL := True;
-      for DLL in Res.DLLs do
-      begin
-        if not FirstDLL then SB.AppendLine(',');
-        FirstDLL := False;
-
-        SB.AppendLine('      {');
-        SB.AppendLine(Format('        "name": "%s",', [JSONEscape(DLL.Name)]));
-
-        // Search order
-        SB.AppendLine('        "searchOrder": [');
-        var FirstSO := True;
-        for var SO in DLL.SearchOrder do
-        begin
-          if not FirstSO then SB.AppendLine(',');
-          FirstSO := False;
-          SB.Append(Format(
-            '          {"path":"%s","label":"%s","writable":%s,"containsDLL":%s}',
-            [JSONEscape(SO.Path), JSONEscape(SO.Label_),
-             IfThen(SO.Writable, 'true', 'false'),
-             IfThen(SO.ContainsDLL, 'true', 'false')]));
-        end;
-        if Length(DLL.SearchOrder) > 0 then SB.AppendLine('');
-        SB.AppendLine('        ],');
-
-        SB.AppendLine('        "methods": [');
-        FirstMethod := True;
-        for Method in DLL.Methods do
-        begin
-          if not FirstMethod then SB.AppendLine(',');
-          FirstMethod := False;
-          SB.Append(Format('          "%s"', [JSONEscape(Method)]));
-        end;
-
-        if Length(DLL.Methods) > 0 then SB.AppendLine('');
-        SB.AppendLine('        ]');
-        SB.Append('      }');
-      end;
-
-      if Length(Res.DLLs) > 0 then SB.AppendLine('');
-      SB.AppendLine('    ]');
-      SB.Append('  }');
-    end;
-
-    SB.AppendLine('');
-    SB.AppendLine(']');
-
-    TFile.WriteAllText(FilePath, SB.ToString, TEncoding.UTF8);
-  finally
-    SB.Free;
-  end;
+  Json := ScanExport.BuildJSON(FResults.ToArray);
+  TFile.WriteAllText(FilePath, Json, TEncoding.UTF8);
 end;
 
 end.
