@@ -9,6 +9,7 @@
         <FrameworkType>VCL</FrameworkType>
         <ProjectVersion>18.2</ProjectVersion>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <ProjectName Condition="'$(ProjectName)'==''">Robber</ProjectName>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
@@ -75,12 +76,12 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <VerInfo_Release>15</VerInfo_Release>
-        <VerInfo_Build>5</VerInfo_Build>
+        <VerInfo_Build>6</VerInfo_Build>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_MinorVer>7</VerInfo_MinorVer>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-        <VerInfo_Keys>CompanyName=Felony;FileDescription=DLL Hijack Finder;FileVersion=1.7.15.5;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=DLL Robber;ProductName=DLL Robber;ProductVersion=1.7.15.2;Comments=;ProgramID=com.embarcadero.$(MSBuildProjectName)</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Felony;FileDescription=DLL Hijack Finder;FileVersion=1.7.15.6;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=DLL Robber;ProductName=DLL Robber;ProductVersion=1.7.15.2;Comments=;ProgramID=com.embarcadero.$(MSBuildProjectName)</VerInfo_Keys>
         <BT_BuildType>Debug</BT_BuildType>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
@@ -104,6 +105,11 @@
             <Form>frmMain</Form>
         </DCCReference>
         <DCCReference Include="DLLHijack.pas"/>
+        <DCCReference Include="ScanThread.pas"/>
+        <DCCReference Include="CLIRunner.pas"/>
+        <DCCReference Include="UAC.pas"/>
+        <DCCReference Include="DLLSearchOrder.pas"/>
+        <DCCReference Include="ScanExport.pas"/>
         <DCCReference Include="fAbout.pas">
             <Form>frmAbout</Form>
         </DCCReference>
@@ -171,15 +177,15 @@
         <DCCReference Include="PEParser\PE.Types.TLS.pas"/>
         <DCCReference Include="PEParser\PE.Utils.pas"/>
         <DCCReference Include="PEParser\WinHelper.pas"/>
-        <BuildConfiguration Include="Debug">
-            <Key>Cfg_2</Key>
-            <CfgParent>Base</CfgParent>
-        </BuildConfiguration>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
         <BuildConfiguration Include="Release">
             <Key>Cfg_1</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Debug">
+            <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
         </BuildConfiguration>
     </ItemGroup>
