@@ -3,7 +3,7 @@ object frmMain: TfrmMain
   Top = 0
   Caption = 'Robber - DLL Hijack Scanner'
   ClientHeight = 640
-  ClientWidth = 1089
+  ClientWidth = 1130
   Color = clBtnFace
   Constraints.MinHeight = 500
   Constraints.MinWidth = 800
@@ -320,20 +320,20 @@ object frmMain: TfrmMain
   OnClose = FormClose
   OnCreate = FormCreate
   DesignSize = (
-    1089
+    1130
     640)
-  TextHeight = 15
+  TextHeight = 13
   object GOptions: TGroupBox
     Left = 8
     Top = 415
-    Width = 1073
+    Width = 1114
     Height = 191
     Anchors = [akLeft, akRight, akBottom]
     TabOrder = 1
     ExplicitTop = 366
     ExplicitWidth = 1057
     DesignSize = (
-      1073
+      1114
       191)
     object rgMustScanImageType: TRadioGroup
       Left = 17
@@ -352,8 +352,8 @@ object frmMain: TfrmMain
     object edSearchPath: TEdit
       Left = 17
       Top = 9
-      Width = 937
-      Height = 23
+      Width = 978
+      Height = 21
       Anchors = [akLeft, akTop, akRight]
       ReadOnly = True
       TabOrder = 1
@@ -397,8 +397,8 @@ object frmMain: TfrmMain
       object lblBestChoice: TLabel
         Left = 30
         Top = 27
-        Width = 340
-        Height = 15
+        Width = 292
+        Height = 13
         Caption = 
           'DLL Count <=                       EXE Size <=                  ' +
           '          KB'
@@ -406,8 +406,8 @@ object frmMain: TfrmMain
       object lblGoodChoice: TLabel
         Left = 30
         Top = 54
-        Width = 340
-        Height = 15
+        Width = 292
+        Height = 13
         Caption = 
           'DLL Count <=                       EXE Size <=                  ' +
           '          KB'
@@ -472,15 +472,15 @@ object frmMain: TfrmMain
       object lblBadChoice: TLabel
         Left = 30
         Top = 80
-        Width = 159
-        Height = 15
+        Width = 151
+        Height = 13
         Caption = 'DLL Count > 4 , EXE Size > 500'
       end
       object sedBestChoiceDLLCount: TSpinEdit
         Left = 104
         Top = 24
         Width = 57
-        Height = 24
+        Height = 22
         MaxValue = 0
         MinValue = 0
         TabOrder = 0
@@ -490,7 +490,7 @@ object frmMain: TfrmMain
         Left = 232
         Top = 51
         Width = 74
-        Height = 24
+        Height = 22
         MaxValue = 0
         MinValue = 0
         TabOrder = 1
@@ -501,7 +501,7 @@ object frmMain: TfrmMain
         Left = 104
         Top = 51
         Width = 57
-        Height = 24
+        Height = 22
         MaxValue = 0
         MinValue = 0
         TabOrder = 2
@@ -512,7 +512,7 @@ object frmMain: TfrmMain
         Left = 232
         Top = 24
         Width = 74
-        Height = 24
+        Height = 22
         MaxValue = 0
         MinValue = 0
         TabOrder = 3
@@ -520,7 +520,7 @@ object frmMain: TfrmMain
       end
     end
     object btnBrowsePath: TButton
-      Left = 969
+      Left = 1010
       Top = 7
       Width = 91
       Height = 25
@@ -531,7 +531,7 @@ object frmMain: TfrmMain
       ExplicitLeft = 953
     end
     object btnScan: TButton
-      Left = 969
+      Left = 1010
       Top = 38
       Width = 91
       Height = 25
@@ -543,7 +543,7 @@ object frmMain: TfrmMain
       ExplicitLeft = 953
     end
     object btnAbout: TButton
-      Left = 969
+      Left = 1010
       Top = 69
       Width = 91
       Height = 25
@@ -554,7 +554,7 @@ object frmMain: TfrmMain
       ExplicitLeft = 953
     end
     object btnExport: TButton
-      Left = 969
+      Left = 1010
       Top = 100
       Width = 91
       Height = 25
@@ -568,7 +568,7 @@ object frmMain: TfrmMain
     object AnalyzeProgress: TProgressBar
       Left = 17
       Top = 164
-      Width = 937
+      Width = 978
       Height = 17
       Anchors = [akLeft, akRight, akBottom]
       DoubleBuffered = True
@@ -594,7 +594,7 @@ object frmMain: TfrmMain
   object tvApplication: TTreeView
     Left = 8
     Top = 8
-    Width = 1073
+    Width = 1114
     Height = 401
     Anchors = [akLeft, akTop, akRight, akBottom]
     Color = clWhite
@@ -616,7 +616,7 @@ object frmMain: TfrmMain
   object StatusBar1: TStatusBar
     Left = 0
     Top = 621
-    Width = 1089
+    Width = 1130
     Height = 19
     Panels = <
       item
