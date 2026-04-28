@@ -316,6 +316,7 @@ object frmMain: TfrmMain
     C003FFFF0000FFFFC003FFFF0000FFFFC003FFFF0000FFFFE003FFFF0000}
   OldCreateOrder = False
   OnClose = FormClose
+  OnCreate = FormCreate
   Position = poScreenCenter
   DesignSize = (
     1089
