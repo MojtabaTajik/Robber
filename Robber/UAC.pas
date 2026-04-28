@@ -14,6 +14,10 @@ implementation
 uses
   Winapi.Windows, System.SysUtils, System.Classes;
 
+const
+  // XE2's Winapi.Windows may not declare these — define them locally.
+  LOAD_LIBRARY_AS_IMAGE_RESOURCE = $00000020;
+
 function ContainsLevel(const XMLLower, Level: string): Boolean;
 begin
   Result := XMLLower.Contains('level="' + Level + '"') or
