@@ -9,7 +9,7 @@ uses
   Vcl.ImgList, ShellAPI, ClipBrd, DLLHijack, DigitalSignature, Vcl.Menus,
   System.TypInfo, Vcl.ExtCtrls, Vcl.Samples.Spin, PNGImage, System.ImageList,
   Vcl.Themes, System.Types, ScanThread, IniFiles, System.Generics.Collections,
-  System.StrUtils;
+  System.StrUtils, DLLSearchOrder;
 
 type
   TfrmMain = class(TForm)
@@ -263,6 +263,26 @@ begin
         Method.ImageIndex := 3;
         Method.SelectedIndex := 3;
       end;
+
+      // Search order sub-tree
+      if Length(DLLInfo.SearchOrder) > 0 then
+      begin
+        var OrderNode := tvApplication.Items.AddChild(DLLNode, 'Search Order');
+        OrderNode.ImageIndex := 1;
+        OrderNode.SelectedIndex := 1;
+        var Pos := 1;
+        for var Entry in DLLInfo.SearchOrder do
+        begin
+          var Flag := '';
+          if Entry.ContainsDLL then Flag := Flag + ' [DLL here]';
+          if Entry.Writable     then Flag := Flag + ' [WRITABLE]';
+          var EntryNode := tvApplication.Items.AddChild(OrderNode,
+            Format('[%d] %s%s', [Pos, Entry.Label_, Flag]));
+          EntryNode.ImageIndex := 3;
+          EntryNode.SelectedIndex := 3;
+          Inc(Pos);
+        end;
+      end;
     end;
   finally
     tvApplication.Items.EndUpdate;
@@ -415,11 +435,16 @@ var
 begin
   Lines := TStringList.Create;
   try
-    Lines.Add('ExePath,FileSize,Architecture,Signed,Signer,HijackRate,UAC,DLL,Method');
+    Lines.Add('ExePath,FileSize,Architecture,Signed,Signer,HijackRate,UAC,DLL,WritableAttackPaths,Method');
 
     for Res in FResults do
       for DLL in Res.DLLs do
       begin
+        var WritablePaths := '';
+        for var SO in DLL.SearchOrder do
+          if SO.Writable then
+            WritablePaths := WritablePaths + IfThen(WritablePaths = '', '', '; ') + SO.Path;
+
         if Length(DLL.Methods) = 0 then
         begin
           Row := CSVEscape(Res.ExePath) + ',' +
@@ -429,7 +454,8 @@ begin
                  CSVEscape(Res.SignerCompany) + ',' +
                  HijackRateStr(Res.HijackRate) + ',' +
                  Res.ExecutionLevel + ',' +
-                 CSVEscape(DLL.Name) + ',';
+                 CSVEscape(DLL.Name) + ',' +
+                 CSVEscape(WritablePaths) + ',';
           Lines.Add(Row);
         end
         else
@@ -443,6 +469,7 @@ begin
                    HijackRateStr(Res.HijackRate) + ',' +
                    Res.ExecutionLevel + ',' +
                    CSVEscape(DLL.Name) + ',' +
+                   CSVEscape(WritablePaths) + ',' +
                    CSVEscape(Method);
             Lines.Add(Row);
           end;
@@ -490,8 +517,24 @@ begin
 
         SB.AppendLine('      {');
         SB.AppendLine(Format('        "name": "%s",', [JSONEscape(DLL.Name)]));
-        SB.AppendLine('        "methods": [');
 
+        // Search order
+        SB.AppendLine('        "searchOrder": [');
+        var FirstSO := True;
+        for var SO in DLL.SearchOrder do
+        begin
+          if not FirstSO then SB.AppendLine(',');
+          FirstSO := False;
+          SB.Append(Format(
+            '          {"path":"%s","label":"%s","writable":%s,"containsDLL":%s}',
+            [JSONEscape(SO.Path), JSONEscape(SO.Label_),
+             IfThen(SO.Writable, 'true', 'false'),
+             IfThen(SO.ContainsDLL, 'true', 'false')]));
+        end;
+        if Length(DLL.SearchOrder) > 0 then SB.AppendLine('');
+        SB.AppendLine('        ],');
+
+        SB.AppendLine('        "methods": [');
         FirstMethod := True;
         for Method in DLL.Methods do
         begin
