@@ -5,7 +5,7 @@ interface
 uses
   System.Classes, System.SysUtils, System.IOUtils, System.Types,
   System.Generics.Collections, Winapi.Windows,
-  DLLHijack, DigitalSignature;
+  DLLHijack, DigitalSignature, UAC;
 
 type
   TDLLScanInfo = record
@@ -20,6 +20,7 @@ type
     IsSigned: Boolean;
     SignerCompany: string;
     HijackRate: THijackRate;
+    ExecutionLevel: string;  // 'requireAdministrator' | 'highestAvailable' | 'asInvoker' | ''
     DLLs: TArray<TDLLScanInfo>;
   end;
 
@@ -248,12 +249,13 @@ begin
         if FilterWritePerm(EachFile) then Continue;
 
         // Build result record
-        Res.ExePath := EachFile;
-        Res.FileSize := PEFile.GetFileSize;
-        Res.IsX86 := PEFile.IsX86Image;
-        Res.IsSigned := IsSigned;
-        Res.SignerCompany := Signature.SignerCompany;
-        Res.HijackRate := HijackRate;
+        Res.ExePath        := EachFile;
+        Res.FileSize       := PEFile.GetFileSize;
+        Res.IsX86          := PEFile.IsX86Image;
+        Res.IsSigned       := IsSigned;
+        Res.SignerCompany  := Signature.SignerCompany;
+        Res.HijackRate     := HijackRate;
+        Res.ExecutionLevel := GetExecutionLevel(EachFile);
 
         // Collect DLLs and their methods in one pass
         Methods := TStringList.Create;
