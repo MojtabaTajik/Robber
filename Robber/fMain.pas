@@ -8,7 +8,7 @@ uses
   Vcl.StdCtrls, Vcl.Grids, Vcl.ValEdit, Vcl.ComCtrls, FileCtrl, IOUtils,
   Vcl.ImgList, ShellAPI, ClipBrd, DLLHijack, DigitalSignature, Vcl.Menus,
   System.TypInfo, Vcl.ExtCtrls, Vcl.Samples.Spin, PNGImage, System.ImageList,
-  Vcl.Themes, System.Types, ScanThread;
+  Vcl.Themes, System.Types, ScanThread, IniFiles;
 
 type
   TfrmMain = class(TForm)
@@ -45,9 +45,13 @@ type
     procedure miOpenPathClick(Sender: TObject);
     procedure btnScanClick(Sender: TObject);
     procedure sedGoodChoiceDLLCountChange(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
   private
     FScanThread: TScanThread;
+    function SettingsPath: string;
+    procedure LoadSettings;
+    procedure SaveSettings;
     procedure StartScan;
     procedure CancelScan;
     procedure CollapseAllItems;
@@ -68,6 +72,58 @@ implementation
 
 uses
   fAbout;
+
+function TfrmMain.SettingsPath: string;
+begin
+  Result := ChangeFileExt(Application.ExeName, '.ini');
+end;
+
+procedure TfrmMain.LoadSettings;
+var
+  Ini: TIniFile;
+begin
+  Ini := TIniFile.Create(SettingsPath);
+  try
+    edSearchPath.Text                  := Ini.ReadString ('Scan',    'LastPath',          '');
+    rgMustScanImageType.ItemIndex      := Ini.ReadInteger('Filters', 'ImageType',          0);
+    rgSignState.ItemIndex              := Ini.ReadInteger('Filters', 'SignState',           0);
+    rgAbuseCandidate.ItemIndex         := Ini.ReadInteger('Filters', 'AbuseCandidate',      0);
+    rgbWritePerm.ItemIndex             := Ini.ReadInteger('Filters', 'WritePerm',           0);
+    sedBestChoiceDLLCount.Value        := Ini.ReadInteger('Rules',   'BestChoiceDLLCount',  2);
+    sedBestChoiceExeSize.Value         := Ini.ReadInteger('Rules',   'BestChoiceExeSize',  10240);
+    sedGoodChoiceDLLCount.Value        := Ini.ReadInteger('Rules',   'GoodChoiceDLLCount',  5);
+    sedGoodChoiceExeSize.Value         := Ini.ReadInteger('Rules',   'GoodChoiceExeSize',  51200);
+  finally
+    Ini.Free;
+  end;
+
+  btnScan.Enabled := edSearchPath.Text <> '';
+end;
+
+procedure TfrmMain.SaveSettings;
+var
+  Ini: TIniFile;
+begin
+  Ini := TIniFile.Create(SettingsPath);
+  try
+    Ini.WriteString ('Scan',    'LastPath',          edSearchPath.Text);
+    Ini.WriteInteger('Filters', 'ImageType',          rgMustScanImageType.ItemIndex);
+    Ini.WriteInteger('Filters', 'SignState',           rgSignState.ItemIndex);
+    Ini.WriteInteger('Filters', 'AbuseCandidate',      rgAbuseCandidate.ItemIndex);
+    Ini.WriteInteger('Filters', 'WritePerm',           rgbWritePerm.ItemIndex);
+    Ini.WriteInteger('Rules',   'BestChoiceDLLCount',  sedBestChoiceDLLCount.Value);
+    Ini.WriteInteger('Rules',   'BestChoiceExeSize',   sedBestChoiceExeSize.Value);
+    Ini.WriteInteger('Rules',   'GoodChoiceDLLCount',  sedGoodChoiceDLLCount.Value);
+    Ini.WriteInteger('Rules',   'GoodChoiceExeSize',   sedGoodChoiceExeSize.Value);
+  finally
+    Ini.Free;
+  end;
+end;
+
+procedure TfrmMain.FormCreate(Sender: TObject);
+begin
+  LoadSettings;
+end;
 
 procedure TfrmMain.btnBrowsePathClick(Sender: TObject);
 var
@@ -93,6 +149,7 @@ procedure TfrmMain.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   if FScanThread <> nil then
     FScanThread.Terminate;
+  SaveSettings;
 end;
 
 procedure TfrmMain.StartScan;
