@@ -214,8 +214,11 @@ end;
 procedure TfrmMain.OnScanResult(const Result: TScanResult);
 var
   App, DLLNode, Scale, Sign, ImageTypeNode, Method: TTreeNode;
+  UACNode, OrderNode, EntryNode: TTreeNode;
   DLLInfo: TDLLScanInfo;
-  MethodName, ImageTypeString: string;
+  Entry: TSearchEntry;
+  MethodName, ImageTypeString, Flag: string;
+  Pos, j: Integer;
 begin
   FResults.Add(Result);
 
@@ -245,7 +248,7 @@ begin
     if (Result.ExecutionLevel = 'requireAdministrator') or
        (Result.ExecutionLevel = 'highestAvailable') then
     begin
-      var UACNode := tvApplication.Items.AddChild(App,
+      UACNode := tvApplication.Items.AddChild(App,
         Format('UAC : %s', [Result.ExecutionLevel]));
       UACNode.ImageIndex := 7;
       UACNode.SelectedIndex := 7;
@@ -274,16 +277,17 @@ begin
       // Search order sub-tree
       if Length(DLLInfo.SearchOrder) > 0 then
       begin
-        var OrderNode := tvApplication.Items.AddChild(DLLNode, 'Search Order');
+        OrderNode := tvApplication.Items.AddChild(DLLNode, 'Search Order');
         OrderNode.ImageIndex := 1;
         OrderNode.SelectedIndex := 1;
-        var Pos := 1;
-        for var Entry in DLLInfo.SearchOrder do
+        Pos := 1;
+        for j := 0 to High(DLLInfo.SearchOrder) do
         begin
-          var Flag := '';
+          Entry := DLLInfo.SearchOrder[j];
+          Flag := '';
           if Entry.ContainsDLL then Flag := Flag + ' [DLL here]';
           if Entry.Writable     then Flag := Flag + ' [WRITABLE]';
-          var EntryNode := tvApplication.Items.AddChild(OrderNode,
+          EntryNode := tvApplication.Items.AddChild(OrderNode,
             Format('[%d] %s%s', [Pos, Entry.Label_, Flag]));
           EntryNode.ImageIndex := 3;
           EntryNode.SelectedIndex := 3;
