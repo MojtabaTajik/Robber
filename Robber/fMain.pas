@@ -8,7 +8,8 @@ uses
   Vcl.StdCtrls, Vcl.Grids, Vcl.ValEdit, Vcl.ComCtrls, FileCtrl, IOUtils,
   Vcl.ImgList, ShellAPI, ClipBrd, DLLHijack, DigitalSignature, Vcl.Menus,
   System.TypInfo, Vcl.ExtCtrls, Vcl.Samples.Spin, PNGImage, System.ImageList,
-  Vcl.Themes, System.Types, ScanThread, IniFiles;
+  Vcl.Themes, System.Types, ScanThread, IniFiles, System.Generics.Collections,
+  System.StrUtils;
 
 type
   TfrmMain = class(TForm)
@@ -39,16 +40,19 @@ type
     StatusBar1: TStatusBar;
     AnalyzeProgress: TProgressBar;
     rgbWritePerm: TRadioGroup;
+    btnExport: TButton;
     procedure btnBrowsePathClick(Sender: TObject);
     procedure btnAboutClick(Sender: TObject);
     procedure miCopyClick(Sender: TObject);
     procedure miOpenPathClick(Sender: TObject);
     procedure btnScanClick(Sender: TObject);
+    procedure btnExportClick(Sender: TObject);
     procedure sedGoodChoiceDLLCountChange(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
   private
     FScanThread: TScanThread;
+    FResults: TList<TScanResult>;
     function SettingsPath: string;
     procedure LoadSettings;
     procedure SaveSettings;
@@ -59,6 +63,8 @@ type
     procedure OnScanProgress(Current, Total: Integer; const FileName: string);
     procedure OnScanResult(const Result: TScanResult);
     procedure OnScanDone(Cancelled: Boolean);
+    procedure ExportToCSV(const FilePath: string);
+    procedure ExportToJSON(const FilePath: string);
   public
     { Public declarations }
   end;
@@ -122,6 +128,7 @@ end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
 begin
+  FResults := TList<TScanResult>.Create;
   LoadSettings;
 end;
 
@@ -150,6 +157,7 @@ begin
   if FScanThread <> nil then
     FScanThread.Terminate;
   SaveSettings;
+  FResults.Free;
 end;
 
 procedure TfrmMain.StartScan;
@@ -172,6 +180,8 @@ begin
 
   AnalyzeProgress.Position := 0;
   StatusBar1.Panels[0].Text := 'Starting scan...';
+  FResults.Clear;
+  btnExport.Enabled := False;
 
   FScanThread := TScanThread.Create(Options, OnScanProgress, OnScanResult, OnScanDone);
 end;
@@ -200,6 +210,8 @@ var
   DLLInfo: TDLLScanInfo;
   MethodName, ImageTypeString: string;
 begin
+  FResults.Add(Result);
+
   tvApplication.Items.BeginUpdate;
   try
     App := tvApplication.Items.Add(nil, Result.ExePath);
@@ -254,6 +266,7 @@ begin
   AnalyzeProgress.Position := 0;
   SetOptionControlsEnableState(True);
   btnScan.Caption := 'Scan';
+  btnExport.Enabled := FResults.Count > 0;
   CollapseAllItems;
 
   if Cancelled then
@@ -322,6 +335,176 @@ var
 begin
   for i := 0 to tvApplication.Items.Count - 1 do
     tvApplication.Items[i].Collapse(True);
+end;
+
+procedure TfrmMain.btnExportClick(Sender: TObject);
+var
+  Dlg: TSaveDialog;
+begin
+  if FResults.Count = 0 then
+    Exit;
+
+  Dlg := TSaveDialog.Create(Self);
+  try
+    Dlg.Title := 'Export results';
+    Dlg.Filter := 'JSON file (*.json)|*.json|CSV file (*.csv)|*.csv';
+    Dlg.FilterIndex := 1;
+    Dlg.DefaultExt := 'json';
+    Dlg.Options := [ofOverwritePrompt, ofPathMustExist];
+
+    if not Dlg.Execute then
+      Exit;
+
+    if Dlg.FilterIndex = 1 then
+      ExportToJSON(Dlg.FileName)
+    else
+      ExportToCSV(Dlg.FileName);
+
+    StatusBar1.Panels[0].Text := Format('Exported %d results to %s',
+      [FResults.Count, ExtractFileName(Dlg.FileName)]);
+  finally
+    Dlg.Free;
+  end;
+end;
+
+function HijackRateStr(Rate: THijackRate): string;
+begin
+  case Rate of
+    hrBest: Result := 'Best';
+    hrGood: Result := 'Good';
+    hrBad:  Result := 'Bad';
+  else
+    Result := '';
+  end;
+end;
+
+function CSVEscape(const S: string): string;
+begin
+  if S.Contains(',') or S.Contains('"') or S.Contains(#10) or S.Contains(#13) then
+    Result := '"' + S.Replace('"', '""') + '"'
+  else
+    Result := S;
+end;
+
+function JSONEscape(const S: string): string;
+begin
+  Result := S
+    .Replace('\', '\\')
+    .Replace('"', '\"')
+    .Replace(#13, '\r')
+    .Replace(#10, '\n')
+    .Replace(#9,  '\t');
+end;
+
+procedure TfrmMain.ExportToCSV(const FilePath: string);
+var
+  Lines: TStringList;
+  Res: TScanResult;
+  DLL: TDLLScanInfo;
+  Method: string;
+  Row: string;
+begin
+  Lines := TStringList.Create;
+  try
+    Lines.Add('ExePath,FileSize,Architecture,Signed,Signer,HijackRate,DLL,Method');
+
+    for Res in FResults do
+      for DLL in Res.DLLs do
+      begin
+        if Length(DLL.Methods) = 0 then
+        begin
+          Row := CSVEscape(Res.ExePath) + ',' +
+                 IntToStr(Res.FileSize) + ',' +
+                 IfThen(Res.IsX86, 'x86', 'x64') + ',' +
+                 IfThen(Res.IsSigned, 'true', 'false') + ',' +
+                 CSVEscape(Res.SignerCompany) + ',' +
+                 HijackRateStr(Res.HijackRate) + ',' +
+                 CSVEscape(DLL.Name) + ',';
+          Lines.Add(Row);
+        end
+        else
+          for Method in DLL.Methods do
+          begin
+            Row := CSVEscape(Res.ExePath) + ',' +
+                   IntToStr(Res.FileSize) + ',' +
+                   IfThen(Res.IsX86, 'x86', 'x64') + ',' +
+                   IfThen(Res.IsSigned, 'true', 'false') + ',' +
+                   CSVEscape(Res.SignerCompany) + ',' +
+                   HijackRateStr(Res.HijackRate) + ',' +
+                   CSVEscape(DLL.Name) + ',' +
+                   CSVEscape(Method);
+            Lines.Add(Row);
+          end;
+      end;
+
+    Lines.SaveToFile(FilePath, TEncoding.UTF8);
+  finally
+    Lines.Free;
+  end;
+end;
+
+procedure TfrmMain.ExportToJSON(const FilePath: string);
+var
+  SB: TStringBuilder;
+  Res: TScanResult;
+  DLL: TDLLScanInfo;
+  Method: string;
+  FirstRes, FirstDLL, FirstMethod: Boolean;
+begin
+  SB := TStringBuilder.Create;
+  try
+    SB.AppendLine('[');
+    FirstRes := True;
+
+    for Res in FResults do
+    begin
+      if not FirstRes then SB.AppendLine(',');
+      FirstRes := False;
+
+      SB.AppendLine('  {');
+      SB.AppendLine(Format('    "path": "%s",',        [JSONEscape(Res.ExePath)]));
+      SB.AppendLine(Format('    "fileSizeKB": %d,',    [Res.FileSize]));
+      SB.AppendLine(Format('    "architecture": "%s",', [IfThen(Res.IsX86, 'x86', 'x64')]));
+      SB.AppendLine(Format('    "signed": %s,',         [IfThen(Res.IsSigned, 'true', 'false')]));
+      SB.AppendLine(Format('    "signer": "%s",',       [JSONEscape(Res.SignerCompany)]));
+      SB.AppendLine(Format('    "hijackRate": "%s",',   [HijackRateStr(Res.HijackRate)]));
+      SB.AppendLine('    "dlls": [');
+
+      FirstDLL := True;
+      for DLL in Res.DLLs do
+      begin
+        if not FirstDLL then SB.AppendLine(',');
+        FirstDLL := False;
+
+        SB.AppendLine('      {');
+        SB.AppendLine(Format('        "name": "%s",', [JSONEscape(DLL.Name)]));
+        SB.AppendLine('        "methods": [');
+
+        FirstMethod := True;
+        for Method in DLL.Methods do
+        begin
+          if not FirstMethod then SB.AppendLine(',');
+          FirstMethod := False;
+          SB.Append(Format('          "%s"', [JSONEscape(Method)]));
+        end;
+
+        if Length(DLL.Methods) > 0 then SB.AppendLine('');
+        SB.AppendLine('        ]');
+        SB.Append('      }');
+      end;
+
+      if Length(Res.DLLs) > 0 then SB.AppendLine('');
+      SB.AppendLine('    ]');
+      SB.Append('  }');
+    end;
+
+    SB.AppendLine('');
+    SB.AppendLine(']');
+
+    TFile.WriteAllText(FilePath, SB.ToString, TEncoding.UTF8);
+  finally
+    SB.Free;
+  end;
 end;
 
 end.
