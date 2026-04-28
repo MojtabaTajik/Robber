@@ -4,7 +4,7 @@ interface
 
 uses
   System.Classes, System.SysUtils, System.IOUtils, System.Types,
-  System.Generics.Collections,
+  System.Generics.Collections, Winapi.Windows,
   DLLHijack, DigitalSignature;
 
 type
@@ -160,6 +160,36 @@ begin
   end;
 end;
 
+function SystemDirs: TArray<string>;
+var
+  Buf: array[0..MAX_PATH] of Char;
+  WinDir: string;
+begin
+  GetWindowsDirectory(Buf, MAX_PATH);
+  WinDir := IncludeTrailingPathDelimiter(Buf);
+  Result := [WinDir + 'System32\', WinDir + 'SysWOW64\', WinDir + 'System\'];
+end;
+
+procedure StripSystemDLLs(DLLs: TStrings; const SysDirs: TArray<string>);
+var
+  i: Integer;
+  Dir: string;
+  IsSystem: Boolean;
+begin
+  for i := DLLs.Count - 1 downto 0 do
+  begin
+    IsSystem := False;
+    for Dir in SysDirs do
+      if FileExists(Dir + DLLs[i]) then
+      begin
+        IsSystem := True;
+        Break;
+      end;
+    if IsSystem then
+      DLLs.Delete(i);
+  end;
+end;
+
 procedure TScanThread.Execute;
 var
   FileList: TStringDynArray;
@@ -173,7 +203,10 @@ var
   DLLInfo: TDLLScanInfo;
   DLLInfoList: TList<TDLLScanInfo>;
   i: Integer;
+  SysDirs: TArray<string>;
 begin
+  SysDirs := SystemDirs;
+
   FileList := TDirectory.GetFiles(FOptions.SearchPath, '*.exe',
     TSearchOption.soAllDirectories);
 
@@ -199,6 +232,7 @@ begin
       Signature := TDigitalSignature.Create(EachFile);
       try
         PEFile.GetHijackableImportedDLL(ImportDLLs);
+        StripSystemDLLs(ImportDLLs, SysDirs);
         if ImportDLLs.Count = 0 then
           Continue;
 
