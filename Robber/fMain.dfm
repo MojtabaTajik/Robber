@@ -547,6 +547,17 @@ object frmMain: TfrmMain
       TabOrder = 7
       OnClick = btnAboutClick
     end
+    object btnExport: TButton
+      Left = 969
+      Top = 100
+      Width = 91
+      Height = 25
+      Anchors = [akRight, akBottom]
+      Caption = 'Export...'
+      Enabled = False
+      TabOrder = 8
+      OnClick = btnExportClick
+    end
     object AnalyzeProgress: TProgressBar
       Left = 17
       Top = 164
