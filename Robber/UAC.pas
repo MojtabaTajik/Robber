@@ -20,8 +20,8 @@ const
 
 function ContainsLevel(const XMLLower, Level: string): Boolean;
 begin
-  Result := XMLLower.Contains('level="' + Level + '"') or
-            XMLLower.Contains('level=''' + Level + '''');
+  Result := (Pos('level="' + Level + '"', XMLLower) > 0) or
+            (Pos('level=''' + Level + '''', XMLLower) > 0);
 end;
 
 function GetExecutionLevel(const FileName: string): string;
