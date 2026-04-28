@@ -53,6 +53,16 @@ begin
   Result := LowerCase(IncludeTrailingPathDelimiter(D));
 end;
 
+// Strip a single layer of surrounding double-quotes from a PATH entry.
+// Windows allows entries like "C:\Program Files\Foo" in PATH.
+function StripQuotes(const S: string): string;
+begin
+  Result := S;
+  if (Length(Result) >= 2) and (Result[1] = '"') and
+     (Result[Length(Result)] = '"') then
+    Result := Copy(Result, 2, Length(Result) - 2);
+end;
+
 function IsDirWritable(const Dir: string): Boolean;
 var
   TempPath: string;
@@ -65,8 +75,7 @@ begin
       Result := True;
     finally
       FS.Free;
-      // Best-effort cleanup — never let a delete failure leak the check
-      // file's existence as a "not writable" signal or raise back to caller.
+      // Best-effort cleanup — never let a delete failure signal "not writable".
       try TFile.Delete(TempPath); except end;
     end;
   except
@@ -90,10 +99,20 @@ end;
 function MakeEntry(const Dir, Lbl, DLLName: string;
   Cache: TDictionary<string, Boolean>): TSearchEntry;
 begin
-  Result.Path       := IncludeTrailingPathDelimiter(Dir);
-  Result.Label_     := Lbl;
-  Result.Writable   := CachedWritable(Dir, Cache);
+  Result.Path        := IncludeTrailingPathDelimiter(Dir);
+  Result.Label_      := Lbl;
+  Result.Writable    := CachedWritable(Dir, Cache);
   Result.ContainsDLL := FileExists(Result.Path + DLLName);
+end;
+
+// Split a semicolon-delimited string. Uses TStringList with StrictDelimiter
+// so that spaces inside entries are preserved (XE2-compatible).
+function SplitBySemicolon(const S: string): TStringList;
+begin
+  Result := TStringList.Create;
+  Result.Delimiter       := ';';
+  Result.StrictDelimiter := True;
+  Result.DelimitedText   := S;
 end;
 
 function BuildSearchCache: TDictionary<string, Boolean>;
@@ -101,11 +120,11 @@ var
   Cache: TDictionary<string, Boolean>;
   SysBuf, WinBuf: array[0..MAX_PATH] of Char;
   WinDir, PathEnv, P: string;
-  PathParts: TArray<string>;
-  Part: string;
+  PathList: TStringList;
+  i: Integer;
 begin
-  Cache := TDictionary<string, Boolean>.Create(
-    TIStringComparer.Ordinal);
+  // Keys are normalised via NormDir (lowercased), so a plain comparer suffices.
+  Cache := TDictionary<string, Boolean>.Create;
 
   GetSystemDirectory(SysBuf, MAX_PATH);
   GetWindowsDirectory(WinBuf, MAX_PATH);
@@ -117,16 +136,17 @@ begin
   CachedWritable(WinDir, Cache);
 
   // Pre-populate PATH entries
-  PathEnv := GetEnvironmentVariable('PATH');
-  PathParts := PathEnv.Split([';']);
-  for Part in PathParts do
-  begin
-    // Use a local copy — mutating the for-in loop variable is fragile and
-    // not guaranteed by the language spec. Also strip surrounding quotes
-    // since Windows tolerates quoted PATH entries.
-    P := Trim(Part).Trim(['"']);
-    if (P <> '') and DirectoryExists(P) then
-      CachedWritable(P, Cache);
+  PathEnv  := GetEnvironmentVariable('PATH');
+  PathList := SplitBySemicolon(PathEnv);
+  try
+    for i := 0 to PathList.Count - 1 do
+    begin
+      P := StripQuotes(Trim(PathList[i]));
+      if (P <> '') and DirectoryExists(P) then
+        CachedWritable(P, Cache);
+    end;
+  finally
+    PathList.Free;
   end;
 
   Result := Cache;
@@ -138,9 +158,8 @@ var
   Entries: TList<TSearchEntry>;
   SysBuf, WinBuf: array[0..MAX_PATH] of Char;
   WinDir, PathEnv, P: string;
-  PathParts: TArray<string>;
-  Part: string;
-  Idx: Integer;
+  PathList: TStringList;
+  Idx, i: Integer;
 begin
   Entries := TList<TSearchEntry>.Create;
   try
@@ -165,19 +184,21 @@ begin
       'Windows directory', DLLName, Cache));
 
     // 5. PATH entries (only those that exist on disk)
-    PathEnv := GetEnvironmentVariable('PATH');
-    PathParts := PathEnv.Split([';']);
-    Idx := 0;
-    for Part in PathParts do
-    begin
-      // Use a local copy and strip surrounding quotes (Windows allows
-      // quoted PATH entries). Mutating Part directly is unsafe.
-      P := Trim(Part).Trim(['"']);
-      if (P = '') or not DirectoryExists(P) then
-        Continue;
-      Inc(Idx);
-      Entries.Add(MakeEntry(P,
-        Format('PATH[%d]: %s', [Idx, P]), DLLName, Cache));
+    PathEnv  := GetEnvironmentVariable('PATH');
+    PathList := SplitBySemicolon(PathEnv);
+    try
+      Idx := 0;
+      for i := 0 to PathList.Count - 1 do
+      begin
+        P := StripQuotes(Trim(PathList[i]));
+        if (P = '') or not DirectoryExists(P) then
+          Continue;
+        Inc(Idx);
+        Entries.Add(MakeEntry(P,
+          Format('PATH[%d]: %s', [Idx, P]), DLLName, Cache));
+      end;
+    finally
+      PathList.Free;
     end;
 
     Result := Entries.ToArray;
@@ -193,7 +214,10 @@ var
 begin
   GetWindowsDirectory(Buf, MAX_PATH);
   WinDir := IncludeTrailingPathDelimiter(Buf);
-  Result := [WinDir + 'System32\', WinDir + 'SysWOW64\', WinDir + 'System\'];
+  SetLength(Result, 3);
+  Result[0] := WinDir + 'System32\';
+  Result[1] := WinDir + 'SysWOW64\';
+  Result[2] := WinDir + 'System\';
 end;
 
 procedure StripSystemDLLs(DLLs: TStrings; const SysDirs: TArray<string>);
