@@ -4,6 +4,7 @@ interface
 
 uses
   Windows, SysUtils, StrUtils, Classes, Messages, Winapi.CommDlg,
+  System.IOUtils,
   PE.Common,
   PE.Image,
   PE.ExportSym,
@@ -127,7 +128,7 @@ end;
 
 function TDLLHijack.GetFileSize: Cardinal;
 begin
-  Result := Img.SizeOfImage div 1024;
+  Result := Cardinal(System.IOUtils.TFile.GetSize(_FileName) div 1024);
 end;
 
 procedure TDLLHijack.GetImportedDLL(DLLs: TStrings);

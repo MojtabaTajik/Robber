@@ -35,6 +35,14 @@ function BuildSearchCache: TDictionary<string, Boolean>;
 function GetDLLSearchOrder(const ExePath, DLLName: string;
   Cache: TDictionary<string, Boolean>): TArray<TSearchEntry>;
 
+// Returns the standard Windows system directories (System32 / SysWOW64 /
+// 16-bit System). Used to identify "real" system DLLs that aren't candidates
+// for hijacking via search-order abuse.
+function GetSystemDirs: TArray<string>;
+
+// Removes any DLL from the list that is found in one of the SysDirs.
+procedure StripSystemDLLs(DLLs: TStrings; const SysDirs: TArray<string>);
+
 implementation
 
 const
@@ -57,7 +65,9 @@ begin
       Result := True;
     finally
       FS.Free;
-      TFile.Delete(TempPath);
+      // Best-effort cleanup — never let a delete failure leak the check
+      // file's existence as a "not writable" signal or raise back to caller.
+      try TFile.Delete(TempPath); except end;
     end;
   except
     Result := False;
@@ -90,7 +100,7 @@ function BuildSearchCache: TDictionary<string, Boolean>;
 var
   Cache: TDictionary<string, Boolean>;
   SysBuf, WinBuf: array[0..MAX_PATH] of Char;
-  WinDir, PathEnv: string;
+  WinDir, PathEnv, P: string;
   PathParts: TArray<string>;
   Part: string;
 begin
@@ -111,9 +121,12 @@ begin
   PathParts := PathEnv.Split([';']);
   for Part in PathParts do
   begin
-    Part := Trim(Part);
-    if (Part <> '') and DirectoryExists(Part) then
-      CachedWritable(Part, Cache);
+    // Use a local copy — mutating the for-in loop variable is fragile and
+    // not guaranteed by the language spec. Also strip surrounding quotes
+    // since Windows tolerates quoted PATH entries.
+    P := Trim(Part).Trim(['"']);
+    if (P <> '') and DirectoryExists(P) then
+      CachedWritable(P, Cache);
   end;
 
   Result := Cache;
@@ -124,7 +137,7 @@ function GetDLLSearchOrder(const ExePath, DLLName: string;
 var
   Entries: TList<TSearchEntry>;
   SysBuf, WinBuf: array[0..MAX_PATH] of Char;
-  WinDir, PathEnv: string;
+  WinDir, PathEnv, P: string;
   PathParts: TArray<string>;
   Part: string;
   Idx: Integer;
@@ -157,17 +170,49 @@ begin
     Idx := 0;
     for Part in PathParts do
     begin
-      Part := Trim(Part);
-      if (Part = '') or not DirectoryExists(Part) then
+      // Use a local copy and strip surrounding quotes (Windows allows
+      // quoted PATH entries). Mutating Part directly is unsafe.
+      P := Trim(Part).Trim(['"']);
+      if (P = '') or not DirectoryExists(P) then
         Continue;
       Inc(Idx);
-      Entries.Add(MakeEntry(Part,
-        Format('PATH[%d]: %s', [Idx, Part]), DLLName, Cache));
+      Entries.Add(MakeEntry(P,
+        Format('PATH[%d]: %s', [Idx, P]), DLLName, Cache));
     end;
 
     Result := Entries.ToArray;
   finally
     Entries.Free;
+  end;
+end;
+
+function GetSystemDirs: TArray<string>;
+var
+  Buf: array[0..MAX_PATH] of Char;
+  WinDir: string;
+begin
+  GetWindowsDirectory(Buf, MAX_PATH);
+  WinDir := IncludeTrailingPathDelimiter(Buf);
+  Result := [WinDir + 'System32\', WinDir + 'SysWOW64\', WinDir + 'System\'];
+end;
+
+procedure StripSystemDLLs(DLLs: TStrings; const SysDirs: TArray<string>);
+var
+  i: Integer;
+  Dir: string;
+  IsSystem: Boolean;
+begin
+  for i := DLLs.Count - 1 downto 0 do
+  begin
+    IsSystem := False;
+    for Dir in SysDirs do
+      if FileExists(Dir + DLLs[i]) then
+      begin
+        IsSystem := True;
+        Break;
+      end;
+    if IsSystem then
+      DLLs.Delete(i);
   end;
 end;
 
