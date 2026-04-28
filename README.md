@@ -1,50 +1,130 @@
-# Robber
-**Robber** is a free open source tool developed using Delphi XE2 without any 3rd party dependencies.
-- In Version 1.7 Robber doesn't require administrator rights by default because of new write permission check feature, so if you want to scan somewhere like 'ProgramFiles' you need to run Robber with admin rights.
+# Robber — DLL Hijack Scanner
 
-What is DLL hijacking ?!
+Robber scans a directory tree for Windows executables vulnerable to DLL hijacking. It inspects each PE's import table, checks which referenced DLLs are present in the executable's own directory, and rates the attack surface by severity.
 
-Windows has a search path for DLLs in its underlying architecture. If you can figure out what DLLs an executable requests without an absolute path (triggering this search process), you can then place your hostile DLL somewhere higher up the search path so it'll be found before the real version is, and Windows will happilly feed your attack code to the application.
+No third-party dependencies. Runs as a GUI or headless CLI.
 
-So, let's pretend Windows's DLL search path looks something like this:
+---
 
->A) .                   <-- current working directory of the executable, highest priority, first check
+## What is DLL hijacking?
 
->B) \Windows
+When Windows loads a DLL by name (not absolute path), it searches a fixed set of directories in order:
 
->C) \Windows\system32
+1. Directory of the executable
+2. `System32`
+3. `Windows\System`
+4. `Windows`
+5. Directories in `%PATH%`
 
->D) \Windows\syswow64   <-- lowest priority, last check
+If an attacker can plant a malicious DLL in a directory that appears **earlier** in this list than the real DLL, Windows loads the attacker's version instead. Robber finds executables where this is possible.
 
-and some executable "Foo.exe" requests "bar.dll", which happens to live in the syswow64 (D) subdir. This gives you the opportunity to place your malicious version in A), B) or C) and it will be loaded into executable.
+---
 
-As stated before, even an absolute full path can't protect against this, if you can replace the DLL with your own version.
+## GUI
 
-Microsoft Windows protect system pathes like System32 using Windows File Protection mechanism but the best way to protect executable from DLL hijacking in entrprise solutions is :
+![Robber screenshot](Resources/Robber.PNG)
 
-- Use absolute path instead of relative path
-- If you have personal sign, sign your DLL files and check the sign in your application before load DLL into memory. otherwise check the hash of DLL file with original DLL hash)
+### Running a scan
 
-And of course, this isn't really limited to Windows either. Any OS which allows for dynamic linking of external libraries is theoretically vulnerable to this.
+1. Click **Browse...** and select a directory (e.g. `C:\Program Files`)
+2. Set your filters (optional)
+3. Click **Scan** — progress shows in the status bar; click again to cancel
+4. Results appear in the tree — expand any executable to see vulnerable DLLs, exported methods, and the full DLL search order for each
 
-**Robber** use simple mechanism to figure out DLLs that prone to hijacking :
+### Filters
 
-1. Scan import table of executable and find out DLLs that linked to executable
-2. Search for DLL files placed inside executable that match with linked DLL (as i said before current working directory of the executable has highest priority)
-3. If any DLL found, scan the export table of theme
-4. Compare import table of executable with export table of DLL and if any matching was found, the executable and matched common functions flag as DLL hijack candidate.
+| Filter | Options | Effect |
+|--------|---------|--------|
+| Image Type | Any / x86 only / x64 only | Architecture of the executable |
+| Sign State | Any / Signed only | Code-signing status |
+| Abuse Candidate | All / Best / Good / Bad | Minimum severity rating |
+| Directory Write Permission | Any / Weak only | Only show executables in writable directories |
 
-Feauters :
+### Severity ratings
 
-- Ability to select scan type (signed/unsigned applications)
-- Determine executable signer
-- Determine wich referenced DLLs candidate for hijacking
-- Determine exported method names of candidate DLLs
-- Configure rules to determine which hijacks is best or good choice for use and show theme in different colors
-- Ability to check write permission of executable directory that is a good candidate for hijacking
+Ratings are based on how many hijackable DLLs the executable imports and its file size. Thresholds are configurable in the **Color Config** panel.
 
-[Find out latest Robber executable here](https://github.com/MojtabaTajik/Robber/releases)
+| Color | Rating | Meaning |
+|-------|--------|---------|
+| Green | **Best** | Few DLLs, small binary — easy to proxy, high chance of stable execution |
+| Yellow | **Good** | Moderate number of DLLs or larger binary |
+| Red | **Bad** | Many DLLs or large binary — harder to proxy reliably |
 
- <img src="https://raw.githubusercontent.com/MojtabaTajik/Robber/master/Resources/Robber.PNG">
+### Exporting results
 
+After a scan completes, click **Export...** to save:
+- **JSON** — nested structure: executable → DLLs → methods + search order
+- **CSV** — flat, one row per method; suitable for spreadsheets and grep
 
+Settings (last path, filters, thresholds) are saved automatically and restored on next launch.
+
+---
+
+## CLI
+
+Robber runs headlessly when invoked with `--path`. Attach it to an existing console — no new window opens.
+
+```
+Robber.exe --path <dir> [options]
+```
+
+### Options
+
+```
+--path <dir>               Directory to scan (required)
+--output <file>            Output file (.json or .csv). Default: stdout JSON
+--image-type any|x86|x64  Filter by architecture (default: any)
+--sign any|signed          Filter by signing status (default: any)
+--rate any|best|good|bad   Filter by severity rating (default: any)
+--write-perm               Only include executables in writable directories
+--best-dll-count <n>       Best rating: max DLL count (default: 2)
+--best-exe-size <n>        Best rating: max size in KB (default: 10240)
+--good-dll-count <n>       Good rating: max DLL count (default: 5)
+--good-exe-size <n>        Good rating: max size in KB (default: 51200)
+--help                     Show this help
+```
+
+### Examples
+
+```bash
+# Scan Program Files, save results as JSON
+Robber.exe --path "C:\Program Files" --output results.json
+
+# Only Best-rated targets in writable directories, CSV output
+Robber.exe --path "C:\Program Files" --rate best --write-perm --output hits.csv
+
+# Pipe JSON to jq
+Robber.exe --path "C:\Program Files" | jq '.[].exePath'
+
+# Signed executables only, x64
+Robber.exe --path "C:\Tools" --sign signed --image-type x64
+```
+
+Progress is written to **stderr**; results go to **stdout** — safe to pipe or redirect independently.
+
+---
+
+## Understanding results
+
+Each result shows:
+
+- **File size** and **architecture** (x86 / x64)
+- **Signer** — company name from the code-signing certificate, if present
+- **UAC level** — `requireAdministrator` or `highestAvailable` flagged as a warning (elevated process = higher impact)
+- **Vulnerable DLLs** — each one lists:
+  - Imported method names (the functions your proxy DLL must export)
+  - **Search Order** — the exact directories Windows would check, with `[DLL here]` and `[WRITABLE]` flags
+
+System DLLs (`System32`, `SysWOW64`, `Windows\System`) are automatically excluded to eliminate false positives from redistributable runtimes.
+
+---
+
+## Building from source
+
+Requires **Delphi XE2** or later. Open `Robber\Robber.dproj` and build. No external packages or libraries needed.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE)
