@@ -1,10 +1,12 @@
 object frmMain: TfrmMain
   Left = 0
   Top = 0
-  Caption = 'Robber'
+  Caption = 'Robber - DLL Hijack Scanner'
   ClientHeight = 640
-  ClientWidth = 1089
+  ClientWidth = 1130
   Color = clBtnFace
+  Constraints.MinHeight = 500
+  Constraints.MinWidth = 800
   DoubleBuffered = True
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -314,22 +316,24 @@ object frmMain: TfrmMain
     00001FFF0000FFFE00001FFF0000FFFE00001FFF0000FFFE00003FFF0000FFFE
     0000FFFF0000FFFF0001FFFF0000FFFF8001FFFF0000FFFF8003FFFF0000FFFF
     C003FFFF0000FFFFC003FFFF0000FFFFC003FFFF0000FFFFE003FFFF0000}
-  OldCreateOrder = False
   Position = poScreenCenter
+  OnClose = FormClose
+  OnCreate = FormCreate
   DesignSize = (
-    1089
+    1130
     640)
-  PixelsPerInch = 96
   TextHeight = 13
   object GOptions: TGroupBox
     Left = 8
     Top = 415
-    Width = 1073
+    Width = 1114
     Height = 191
     Anchors = [akLeft, akRight, akBottom]
     TabOrder = 1
+    ExplicitTop = 366
+    ExplicitWidth = 1057
     DesignSize = (
-      1073
+      1114
       191)
     object rgMustScanImageType: TRadioGroup
       Left = 17
@@ -348,11 +352,12 @@ object frmMain: TfrmMain
     object edSearchPath: TEdit
       Left = 17
       Top = 9
-      Width = 937
+      Width = 978
       Height = 21
       Anchors = [akLeft, akTop, akRight]
       ReadOnly = True
       TabOrder = 1
+      ExplicitWidth = 921
     end
     object rgSignState: TRadioGroup
       Left = 136
@@ -384,7 +389,7 @@ object frmMain: TfrmMain
     object gbColorConfig: TGroupBox
       Left = 614
       Top = 37
-      Width = 338
+      Width = 380
       Height = 121
       Anchors = [akLeft, akBottom]
       Caption = 'Color Config'
@@ -515,17 +520,18 @@ object frmMain: TfrmMain
       end
     end
     object btnBrowsePath: TButton
-      Left = 969
+      Left = 1010
       Top = 7
       Width = 91
       Height = 25
       Anchors = [akRight, akBottom]
-      Caption = '...'
+      Caption = 'Browse...'
       TabOrder = 5
       OnClick = btnBrowsePathClick
+      ExplicitLeft = 953
     end
     object btnScan: TButton
-      Left = 969
+      Left = 1010
       Top = 38
       Width = 91
       Height = 25
@@ -534,9 +540,10 @@ object frmMain: TfrmMain
       Enabled = False
       TabOrder = 6
       OnClick = btnScanClick
+      ExplicitLeft = 953
     end
     object btnAbout: TButton
-      Left = 969
+      Left = 1010
       Top = 69
       Width = 91
       Height = 25
@@ -544,11 +551,24 @@ object frmMain: TfrmMain
       Caption = 'About'
       TabOrder = 7
       OnClick = btnAboutClick
+      ExplicitLeft = 953
+    end
+    object btnExport: TButton
+      Left = 1010
+      Top = 100
+      Width = 91
+      Height = 25
+      Anchors = [akRight, akBottom]
+      Caption = 'Export...'
+      Enabled = False
+      TabOrder = 10
+      OnClick = btnExportClick
+      ExplicitLeft = 953
     end
     object AnalyzeProgress: TProgressBar
       Left = 17
       Top = 164
-      Width = 937
+      Width = 978
       Height = 17
       Anchors = [akLeft, akRight, akBottom]
       DoubleBuffered = True
@@ -556,6 +576,7 @@ object frmMain: TfrmMain
       MarqueeInterval = 2
       Step = 1
       TabOrder = 8
+      ExplicitWidth = 921
     end
     object rgbWritePerm: TRadioGroup
       Left = 423
@@ -573,7 +594,7 @@ object frmMain: TfrmMain
   object tvApplication: TTreeView
     Left = 8
     Top = 8
-    Width = 1073
+    Width = 1114
     Height = 401
     Anchors = [akLeft, akTop, akRight, akBottom]
     Color = clWhite
@@ -589,17 +610,21 @@ object frmMain: TfrmMain
     PopupMenu = pumTree
     ReadOnly = True
     TabOrder = 0
+    ExplicitWidth = 1057
+    ExplicitHeight = 352
   end
   object StatusBar1: TStatusBar
     Left = 0
     Top = 621
-    Width = 1089
+    Width = 1130
     Height = 19
     Panels = <
       item
         Text = 'Status : Ready'
-        Width = 50
+        Width = 900
       end>
+    ExplicitTop = 572
+    ExplicitWidth = 1073
   end
   object pumTree: TPopupMenu
     Left = 624
@@ -617,7 +642,7 @@ object frmMain: TfrmMain
     Left = 568
     Top = 360
     Bitmap = {
-      494C010109001800200110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010109001800040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000003000000001002000000000000030
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
