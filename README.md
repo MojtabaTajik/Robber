@@ -1,50 +1,71 @@
-# Robber
-**Robber** is a free open source tool developed using Delphi XE2 without any 3rd party dependencies.
-- In Version 1.7 Robber doesn't require administrator rights by default because of new write permission check feature, so if you want to scan somewhere like 'ProgramFiles' you need to run Robber with admin rights.
+# Robber — DLL Hijack Scanner
 
-What is DLL hijacking ?!
+Free, open source tool for finding DLL hijacking opportunities in Windows executables. No third-party dependencies.
 
-Windows has a search path for DLLs in its underlying architecture. If you can figure out what DLLs an executable requests without an absolute path (triggering this search process), you can then place your hostile DLL somewhere higher up the search path so it'll be found before the real version is, and Windows will happilly feed your attack code to the application.
+---
 
-So, let's pretend Windows's DLL search path looks something like this:
+## What it does
 
->A) .                   <-- current working directory of the executable, highest priority, first check
+Windows loads DLLs by searching a fixed set of directories in order — the executable's own directory first, then System32, Windows, PATH entries. If a DLL isn't found in a system directory, an attacker who can write to an earlier directory in that chain can drop a malicious copy and have it loaded instead.
 
->B) \Windows
+Robber walks a directory tree, checks each executable's import table against what's actually on disk, and tells you which ones are worth looking at and why.
 
->C) \Windows\system32
+---
 
->D) \Windows\syswow64   <-- lowest priority, last check
+## GUI usage
 
-and some executable "Foo.exe" requests "bar.dll", which happens to live in the syswow64 (D) subdir. This gives you the opportunity to place your malicious version in A), B) or C) and it will be loaded into executable.
+Point it at a directory, hit **Scan**. Results show up in the tree as they're found — expand any executable to see which DLLs are hijackable, what methods they export, and the full search order with writability flags for each directory.
 
-As stated before, even an absolute full path can't protect against this, if you can replace the DLL with your own version.
+The **Color Config** panel controls the thresholds for Best/Good/Bad ratings:
+- **Best** (green) — few imported DLLs, small binary. Easy to build a proxy DLL that stubs everything out.
+- **Good** (yellow) — moderate complexity
+- **Bad** (red) — lots of imports or large binary, harder to proxy without crashing the app
 
-Microsoft Windows protect system pathes like System32 using Windows File Protection mechanism but the best way to protect executable from DLL hijacking in entrprise solutions is :
+Use the filters to narrow results by architecture, signing status, severity, or whether the executable's directory is actually writable. Hit **Export** when done to save as JSON or CSV.
 
-- Use absolute path instead of relative path
-- If you have personal sign, sign your DLL files and check the sign in your application before load DLL into memory. otherwise check the hash of DLL file with original DLL hash)
+Settings and the last scan path are remembered between sessions.
 
-And of course, this isn't really limited to Windows either. Any OS which allows for dynamic linking of external libraries is theoretically vulnerable to this.
+---
 
-**Robber** use simple mechanism to figure out DLLs that prone to hijacking :
+## CLI
 
-1. Scan import table of executable and find out DLLs that linked to executable
-2. Search for DLL files placed inside executable that match with linked DLL (as i said before current working directory of the executable has highest priority)
-3. If any DLL found, scan the export table of theme
-4. Compare import table of executable with export table of DLL and if any matching was found, the executable and matched common functions flag as DLL hijack candidate.
+```
+Robber.exe --path <dir> [options]
+```
 
-Feauters :
+```
+--path <dir>               Directory to scan (required)
+--output <file>            Write to file (.json or .csv). Default: stdout
+--image-type any|x86|x64
+--sign any|signed
+--rate any|best|good|bad
+--write-perm               Only show results in writable directories
+--best-dll-count <n>       (default: 2)
+--best-exe-size <n>        KB threshold (default: 10240)
+--good-dll-count <n>       (default: 5)
+--good-exe-size <n>        KB threshold (default: 51200)
+--help
+```
 
-- Ability to select scan type (signed/unsigned applications)
-- Determine executable signer
-- Determine wich referenced DLLs candidate for hijacking
-- Determine exported method names of candidate DLLs
-- Configure rules to determine which hijacks is best or good choice for use and show theme in different colors
-- Ability to check write permission of executable directory that is a good candidate for hijacking
+Progress goes to stderr, results to stdout — pipe-friendly.
 
-[Find out latest Robber executable here](https://github.com/MojtabaTajik/Robber/releases)
+```bash
+Robber.exe --path "C:\Program Files" --rate best --output hits.json
+Robber.exe --path "C:\Program Files" | jq '.[].exePath'
+Robber.exe --path "C:\Tools" --sign signed --write-perm
+```
 
- <img src="https://raw.githubusercontent.com/MojtabaTajik/Robber/master/Resources/Robber.PNG">
+---
 
+## A few things worth knowing
 
+- System DLLs (System32, SysWOW64, Windows\System) are excluded automatically — no false positives from redistributable runtimes like `msvcr120.dll`
+- Both standard and delayed imports are scanned
+- Executables requiring elevation (`requireAdministrator` / `highestAvailable`) are flagged — a hijack on an elevated process is a privilege escalation, not just code execution
+- The search order tree shows exactly which directories Windows would check and which of those you can write to
+
+---
+
+## Building
+
+Delphi XE2 or later. Open `Robber\Robber.dproj`, build. Nothing else needed.
