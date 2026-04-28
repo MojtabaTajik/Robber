@@ -1,130 +1,71 @@
 # Robber — DLL Hijack Scanner
 
-Robber scans a directory tree for Windows executables vulnerable to DLL hijacking. It inspects each PE's import table, checks which referenced DLLs are present in the executable's own directory, and rates the attack surface by severity.
-
-No third-party dependencies. Runs as a GUI or headless CLI.
+Free, open source tool for finding DLL hijacking opportunities in Windows executables. No third-party dependencies.
 
 ---
 
-## What is DLL hijacking?
+## What it does
 
-When Windows loads a DLL by name (not absolute path), it searches a fixed set of directories in order:
+Windows loads DLLs by searching a fixed set of directories in order — the executable's own directory first, then System32, Windows, PATH entries. If a DLL isn't found in a system directory, an attacker who can write to an earlier directory in that chain can drop a malicious copy and have it loaded instead.
 
-1. Directory of the executable
-2. `System32`
-3. `Windows\System`
-4. `Windows`
-5. Directories in `%PATH%`
-
-If an attacker can plant a malicious DLL in a directory that appears **earlier** in this list than the real DLL, Windows loads the attacker's version instead. Robber finds executables where this is possible.
+Robber walks a directory tree, checks each executable's import table against what's actually on disk, and tells you which ones are worth looking at and why.
 
 ---
 
-## GUI
+## GUI usage
 
-![Robber screenshot](Resources/Robber.PNG)
+Point it at a directory, hit **Scan**. Results show up in the tree as they're found — expand any executable to see which DLLs are hijackable, what methods they export, and the full search order with writability flags for each directory.
 
-### Running a scan
+The **Color Config** panel controls the thresholds for Best/Good/Bad ratings:
+- **Best** (green) — few imported DLLs, small binary. Easy to build a proxy DLL that stubs everything out.
+- **Good** (yellow) — moderate complexity
+- **Bad** (red) — lots of imports or large binary, harder to proxy without crashing the app
 
-1. Click **Browse...** and select a directory (e.g. `C:\Program Files`)
-2. Set your filters (optional)
-3. Click **Scan** — progress shows in the status bar; click again to cancel
-4. Results appear in the tree — expand any executable to see vulnerable DLLs, exported methods, and the full DLL search order for each
+Use the filters to narrow results by architecture, signing status, severity, or whether the executable's directory is actually writable. Hit **Export** when done to save as JSON or CSV.
 
-### Filters
-
-| Filter | Options | Effect |
-|--------|---------|--------|
-| Image Type | Any / x86 only / x64 only | Architecture of the executable |
-| Sign State | Any / Signed only | Code-signing status |
-| Abuse Candidate | All / Best / Good / Bad | Minimum severity rating |
-| Directory Write Permission | Any / Weak only | Only show executables in writable directories |
-
-### Severity ratings
-
-Ratings are based on how many hijackable DLLs the executable imports and its file size. Thresholds are configurable in the **Color Config** panel.
-
-| Color | Rating | Meaning |
-|-------|--------|---------|
-| Green | **Best** | Few DLLs, small binary — easy to proxy, high chance of stable execution |
-| Yellow | **Good** | Moderate number of DLLs or larger binary |
-| Red | **Bad** | Many DLLs or large binary — harder to proxy reliably |
-
-### Exporting results
-
-After a scan completes, click **Export...** to save:
-- **JSON** — nested structure: executable → DLLs → methods + search order
-- **CSV** — flat, one row per method; suitable for spreadsheets and grep
-
-Settings (last path, filters, thresholds) are saved automatically and restored on next launch.
+Settings and the last scan path are remembered between sessions.
 
 ---
 
 ## CLI
 
-Robber runs headlessly when invoked with `--path`. Attach it to an existing console — no new window opens.
-
 ```
 Robber.exe --path <dir> [options]
 ```
 
-### Options
-
 ```
 --path <dir>               Directory to scan (required)
---output <file>            Output file (.json or .csv). Default: stdout JSON
---image-type any|x86|x64  Filter by architecture (default: any)
---sign any|signed          Filter by signing status (default: any)
---rate any|best|good|bad   Filter by severity rating (default: any)
---write-perm               Only include executables in writable directories
---best-dll-count <n>       Best rating: max DLL count (default: 2)
---best-exe-size <n>        Best rating: max size in KB (default: 10240)
---good-dll-count <n>       Good rating: max DLL count (default: 5)
---good-exe-size <n>        Good rating: max size in KB (default: 51200)
---help                     Show this help
+--output <file>            Write to file (.json or .csv). Default: stdout
+--image-type any|x86|x64
+--sign any|signed
+--rate any|best|good|bad
+--write-perm               Only show results in writable directories
+--best-dll-count <n>       (default: 2)
+--best-exe-size <n>        KB threshold (default: 10240)
+--good-dll-count <n>       (default: 5)
+--good-exe-size <n>        KB threshold (default: 51200)
+--help
 ```
 
-### Examples
+Progress goes to stderr, results to stdout — pipe-friendly.
 
 ```bash
-# Scan Program Files, save results as JSON
-Robber.exe --path "C:\Program Files" --output results.json
-
-# Only Best-rated targets in writable directories, CSV output
-Robber.exe --path "C:\Program Files" --rate best --write-perm --output hits.csv
-
-# Pipe JSON to jq
+Robber.exe --path "C:\Program Files" --rate best --output hits.json
 Robber.exe --path "C:\Program Files" | jq '.[].exePath'
-
-# Signed executables only, x64
-Robber.exe --path "C:\Tools" --sign signed --image-type x64
+Robber.exe --path "C:\Tools" --sign signed --write-perm
 ```
 
-Progress is written to **stderr**; results go to **stdout** — safe to pipe or redirect independently.
+---
+
+## A few things worth knowing
+
+- System DLLs (System32, SysWOW64, Windows\System) are excluded automatically — no false positives from redistributable runtimes like `msvcr120.dll`
+- Both standard and delayed imports are scanned
+- Executables requiring elevation (`requireAdministrator` / `highestAvailable`) are flagged — a hijack on an elevated process is a privilege escalation, not just code execution
+- The search order tree shows exactly which directories Windows would check and which of those you can write to
 
 ---
 
-## Understanding results
+## Building
 
-Each result shows:
-
-- **File size** and **architecture** (x86 / x64)
-- **Signer** — company name from the code-signing certificate, if present
-- **UAC level** — `requireAdministrator` or `highestAvailable` flagged as a warning (elevated process = higher impact)
-- **Vulnerable DLLs** — each one lists:
-  - Imported method names (the functions your proxy DLL must export)
-  - **Search Order** — the exact directories Windows would check, with `[DLL here]` and `[WRITABLE]` flags
-
-System DLLs (`System32`, `SysWOW64`, `Windows\System`) are automatically excluded to eliminate false positives from redistributable runtimes.
-
----
-
-## Building from source
-
-Requires **Delphi XE2** or later. Open `Robber\Robber.dproj` and build. No external packages or libraries needed.
-
----
-
-## License
-
-MIT — see [LICENSE](LICENSE)
+Delphi XE2 or later. Open `Robber\Robber.dproj`, build. Nothing else needed.
