@@ -14,6 +14,8 @@ Robber walks a directory tree, checks each executable's import table against wha
 
 ## GUI usage
 
+![Robber](https://raw.githubusercontent.com/MojtabaTajik/Robber/master/Resources/Robber.PNG)
+
 Point it at a directory, hit **Scan**. Results show up in the tree as they're found — expand any executable to see which DLLs are hijackable, what methods they export, and the full search order with writability flags for each directory.
 
 The **Color Config** panel controls the thresholds for Best/Good/Bad ratings:
