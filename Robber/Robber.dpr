@@ -4,6 +4,7 @@ uses
   Vcl.Forms,
   fMain in 'fMain.pas' {frmMain},
   DLLHijack in 'DLLHijack.pas',
+  ScanThread in 'ScanThread.pas',
   Vcl.Themes,
   Vcl.Styles,
   fAbout in 'fAbout.pas' {frmAbout},
