@@ -5,12 +5,13 @@ interface
 uses
   System.Classes, System.SysUtils, System.IOUtils, System.Types,
   System.Generics.Collections, Winapi.Windows,
-  DLLHijack, DigitalSignature, UAC;
+  DLLHijack, DigitalSignature, UAC, DLLSearchOrder;
 
 type
   TDLLScanInfo = record
     Name: string;
     Methods: TArray<string>;
+    SearchOrder: TArray<TSearchEntry>;
   end;
 
   TScanResult = record
@@ -205,8 +206,10 @@ var
   DLLInfoList: TList<TDLLScanInfo>;
   i: Integer;
   SysDirs: TArray<string>;
+  SearchCache: TDictionary<string, Boolean>;
 begin
   SysDirs := SystemDirs;
+  SearchCache := BuildSearchCache;
 
   FileList := TDirectory.GetFiles(FOptions.SearchPath, '*.exe',
     TSearchOption.soAllDirectories);
@@ -269,6 +272,7 @@ begin
             SetLength(DLLInfo.Methods, Methods.Count);
             for i := 0 to Methods.Count - 1 do
               DLLInfo.Methods[i] := Methods[i];
+            DLLInfo.SearchOrder := GetDLLSearchOrder(EachFile, DLLName, SearchCache);
             DLLInfoList.Add(DLLInfo);
           end;
           Res.DLLs := DLLInfoList.ToArray;
@@ -291,6 +295,7 @@ begin
   end;
 
   Synchronize(DoDone);
+  SearchCache.Free;
 end;
 
 end.

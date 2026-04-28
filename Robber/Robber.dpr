@@ -7,6 +7,7 @@ uses
   ScanThread in 'ScanThread.pas',
   CLIRunner in 'CLIRunner.pas',
   UAC in 'UAC.pas',
+  DLLSearchOrder in 'DLLSearchOrder.pas',
   Vcl.Themes,
   Vcl.Styles,
   fAbout in 'fAbout.pas' {frmAbout},
