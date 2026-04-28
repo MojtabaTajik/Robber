@@ -1,18 +1,18 @@
 object frmMain: TfrmMain
   Left = 0
   Top = 0
-  Caption = 'Robber — DLL Hijack Scanner'
+  Caption = 'Robber - DLL Hijack Scanner'
   ClientHeight = 640
   ClientWidth = 1089
   Color = clBtnFace
+  Constraints.MinHeight = 500
+  Constraints.MinWidth = 800
   DoubleBuffered = True
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -12
-  Font.Name = 'Segoe UI'
+  Font.Height = -11
+  Font.Name = 'Tahoma'
   Font.Style = []
-  Constraints.MinHeight = 500
-  Constraints.MinWidth = 800
   Icon.Data = {
     0000010001003030000001002000A82500001600000028000000300000006000
     0000010020000000000000240000C1000000C10000000000000000000000FFFF
@@ -316,15 +316,13 @@ object frmMain: TfrmMain
     00001FFF0000FFFE00001FFF0000FFFE00001FFF0000FFFE00003FFF0000FFFE
     0000FFFF0000FFFF0001FFFF0000FFFF8001FFFF0000FFFF8003FFFF0000FFFF
     C003FFFF0000FFFFC003FFFF0000FFFFC003FFFF0000FFFFE003FFFF0000}
-  OldCreateOrder = False
+  Position = poScreenCenter
   OnClose = FormClose
   OnCreate = FormCreate
-  Position = poScreenCenter
   DesignSize = (
     1089
     640)
-  PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object GOptions: TGroupBox
     Left = 8
     Top = 415
@@ -332,6 +330,8 @@ object frmMain: TfrmMain
     Height = 191
     Anchors = [akLeft, akRight, akBottom]
     TabOrder = 1
+    ExplicitTop = 366
+    ExplicitWidth = 1057
     DesignSize = (
       1073
       191)
@@ -353,10 +353,11 @@ object frmMain: TfrmMain
       Left = 17
       Top = 9
       Width = 937
-      Height = 21
+      Height = 23
       Anchors = [akLeft, akTop, akRight]
       ReadOnly = True
       TabOrder = 1
+      ExplicitWidth = 921
     end
     object rgSignState: TRadioGroup
       Left = 136
@@ -388,7 +389,7 @@ object frmMain: TfrmMain
     object gbColorConfig: TGroupBox
       Left = 614
       Top = 37
-      Width = 338
+      Width = 380
       Height = 121
       Anchors = [akLeft, akBottom]
       Caption = 'Color Config'
@@ -396,8 +397,8 @@ object frmMain: TfrmMain
       object lblBestChoice: TLabel
         Left = 30
         Top = 27
-        Width = 292
-        Height = 13
+        Width = 340
+        Height = 15
         Caption = 
           'DLL Count <=                       EXE Size <=                  ' +
           '          KB'
@@ -405,8 +406,8 @@ object frmMain: TfrmMain
       object lblGoodChoice: TLabel
         Left = 30
         Top = 54
-        Width = 292
-        Height = 13
+        Width = 340
+        Height = 15
         Caption = 
           'DLL Count <=                       EXE Size <=                  ' +
           '          KB'
@@ -471,15 +472,15 @@ object frmMain: TfrmMain
       object lblBadChoice: TLabel
         Left = 30
         Top = 80
-        Width = 151
-        Height = 13
+        Width = 159
+        Height = 15
         Caption = 'DLL Count > 4 , EXE Size > 500'
       end
       object sedBestChoiceDLLCount: TSpinEdit
         Left = 104
         Top = 24
         Width = 57
-        Height = 22
+        Height = 24
         MaxValue = 0
         MinValue = 0
         TabOrder = 0
@@ -489,7 +490,7 @@ object frmMain: TfrmMain
         Left = 232
         Top = 51
         Width = 74
-        Height = 22
+        Height = 24
         MaxValue = 0
         MinValue = 0
         TabOrder = 1
@@ -500,7 +501,7 @@ object frmMain: TfrmMain
         Left = 104
         Top = 51
         Width = 57
-        Height = 22
+        Height = 24
         MaxValue = 0
         MinValue = 0
         TabOrder = 2
@@ -511,7 +512,7 @@ object frmMain: TfrmMain
         Left = 232
         Top = 24
         Width = 74
-        Height = 22
+        Height = 24
         MaxValue = 0
         MinValue = 0
         TabOrder = 3
@@ -527,6 +528,7 @@ object frmMain: TfrmMain
       Caption = 'Browse...'
       TabOrder = 5
       OnClick = btnBrowsePathClick
+      ExplicitLeft = 953
     end
     object btnScan: TButton
       Left = 969
@@ -538,6 +540,7 @@ object frmMain: TfrmMain
       Enabled = False
       TabOrder = 6
       OnClick = btnScanClick
+      ExplicitLeft = 953
     end
     object btnAbout: TButton
       Left = 969
@@ -548,6 +551,7 @@ object frmMain: TfrmMain
       Caption = 'About'
       TabOrder = 7
       OnClick = btnAboutClick
+      ExplicitLeft = 953
     end
     object btnExport: TButton
       Left = 969
@@ -557,8 +561,9 @@ object frmMain: TfrmMain
       Anchors = [akRight, akBottom]
       Caption = 'Export...'
       Enabled = False
-      TabOrder = 8
+      TabOrder = 10
       OnClick = btnExportClick
+      ExplicitLeft = 953
     end
     object AnalyzeProgress: TProgressBar
       Left = 17
@@ -571,6 +576,7 @@ object frmMain: TfrmMain
       MarqueeInterval = 2
       Step = 1
       TabOrder = 8
+      ExplicitWidth = 921
     end
     object rgbWritePerm: TRadioGroup
       Left = 423
@@ -604,6 +610,8 @@ object frmMain: TfrmMain
     PopupMenu = pumTree
     ReadOnly = True
     TabOrder = 0
+    ExplicitWidth = 1057
+    ExplicitHeight = 352
   end
   object StatusBar1: TStatusBar
     Left = 0
@@ -615,6 +623,8 @@ object frmMain: TfrmMain
         Text = 'Status : Ready'
         Width = 900
       end>
+    ExplicitTop = 572
+    ExplicitWidth = 1073
   end
   object pumTree: TPopupMenu
     Left = 624
@@ -632,7 +642,7 @@ object frmMain: TfrmMain
     Left = 568
     Top = 360
     Bitmap = {
-      494C010109001800200110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010109001800040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000003000000001002000000000000030
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
