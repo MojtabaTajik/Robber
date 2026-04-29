@@ -15,7 +15,7 @@ unit DLLSearchOrder;
 interface
 
 uses
-  System.SysUtils, System.Classes, System.IOUtils,
+  System.SysUtils, System.Classes, System.IOUtils, System.Types,
   System.Generics.Collections, Winapi.Windows;
 
 type
@@ -42,6 +42,11 @@ function GetSystemDirs: TArray<string>;
 
 // Removes any DLL from the list that is found in one of the SysDirs.
 procedure StripSystemDLLs(DLLs: TStrings; const SysDirs: TArray<string>);
+
+// Recurse manually so a single inaccessible directory (e.g. System Volume
+// Information when scanning a drive root unelevated) doesn't abort the
+// whole enumeration the way TDirectory.GetFiles(..., soAllDirectories) does.
+procedure CollectExeFiles(const Dir: string; Results: TList<string>; Depth: Integer = 0);
 
 implementation
 
@@ -237,6 +242,32 @@ begin
       end;
     if IsSystem then
       DLLs.Delete(i);
+  end;
+end;
+
+procedure CollectExeFiles(const Dir: string; Results: TList<string>; Depth: Integer = 0);
+const
+  MaxDepth = 64;
+var
+  Files, SubDirs: TStringDynArray;
+  F, Sub: string;
+  Attr: DWORD;
+begin
+  if Depth > MaxDepth then Exit;
+  try
+    Files := TDirectory.GetFiles(Dir, '*.exe', TSearchOption.soTopDirectoryOnly);
+    for F in Files do
+      Results.Add(F);
+    SubDirs := TDirectory.GetDirectories(Dir);
+  except
+    on Exception do Exit;
+  end;
+  for Sub in SubDirs do
+  begin
+    Attr := GetFileAttributes(PChar(Sub));
+    if (Attr <> INVALID_FILE_ATTRIBUTES) and
+       ((Attr and FILE_ATTRIBUTE_REPARSE_POINT) = 0) then
+      CollectExeFiles(Sub, Results, Depth + 1);
   end;
 end;
 

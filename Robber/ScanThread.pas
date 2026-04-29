@@ -181,6 +181,7 @@ end;
 procedure TScanThread.Execute;
 var
   FileList: TStringDynArray;
+  FileListTmp: TList<string>;
   EachFile, DLLName: string;
   PEFile: TDLLHijack;
   Signature: TDigitalSignature;
@@ -198,8 +199,13 @@ begin
   try
     SysDirs := GetSystemDirs;
 
-    FileList := TDirectory.GetFiles(FOptions.SearchPath, '*.exe',
-      TSearchOption.soAllDirectories);
+    FileListTmp := TList<string>.Create;
+    try
+      CollectExeFiles(FOptions.SearchPath, FileListTmp);
+      FileList := FileListTmp.ToArray;
+    finally
+      FileListTmp.Free;
+    end;
 
     FSyncTotal := Length(FileList);
     FSyncCurrent := 0;

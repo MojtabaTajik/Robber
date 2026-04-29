@@ -237,6 +237,7 @@ end;
 function RunScan(const Opts: TCLIOptions): TArray<TScanResult>;
 var
   FileList: TStringDynArray;
+  FileListTmp: TList<string>;
   EachFile, DLLName: string;
   PEFile: TDLLHijack;
   Sig: TDigitalSignature;
@@ -255,8 +256,13 @@ begin
   SearchCache := BuildSearchCache;
   Results := TList<TScanResult>.Create;
   try
-    FileList := TDirectory.GetFiles(Opts.ScanPath, '*.exe',
-      TSearchOption.soAllDirectories);
+    FileListTmp := TList<string>.Create;
+    try
+      CollectExeFiles(Opts.ScanPath, FileListTmp);
+      FileList := FileListTmp.ToArray;
+    finally
+      FileListTmp.Free;
+    end;
     Total := Length(FileList);
 
     for i := 0 to Total - 1 do
