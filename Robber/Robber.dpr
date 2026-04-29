@@ -89,7 +89,6 @@ begin
 
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
-  TStyleManager.TrySetStyle('TabletDark');
   Application.CreateForm(TfrmMain, frmMain);
   Application.Run;
 end.
