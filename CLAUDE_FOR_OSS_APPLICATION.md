@@ -34,6 +34,9 @@ made on longevity, real-world security impact, and active maintenance.
 **Email:** onyfel@gmail.com
 **GitHub profile:** https://github.com/MojtabaTajik
 **Are you the primary maintainer?** Yes
+**Other OSS affiliations:** Member of the [.NET Foundation](https://github.com/dotnet-foundation);
+active contributor to the .NET Core ecosystem (visible under the organizations on
+the GitHub profile above).
 
 **Project name:** Robber — DLL Hijack Scanner
 **Repository:** https://github.com/MojtabaTajik/Robber
@@ -73,6 +76,11 @@ made on longevity, real-world security impact, and active maintenance.
 - **Underserved ecosystem.** Delphi / Object Pascal is poorly served by modern AI
   and analysis tooling. Support here disproportionately unblocks a niche the
   ecosystem otherwise ignores.
+- **Established open-source standing beyond this repo.** The maintainer is a member
+  of the .NET Foundation and an active contributor to the .NET Core ecosystem. This
+  isn't a single-project author — it's a long-standing participant in mainstream
+  open source, which is exactly the kind of sustained contribution the program aims
+  to support. (Affiliations are public on the GitHub profile's Organizations.)
 - **Actively maintained, not abandoned.** Recent work includes a non-elevated
   directory-enumeration crash fix, CLI/GUI polish, and export tooling.
 
@@ -95,6 +103,8 @@ made on longevity, real-world security impact, and active maintenance.
 - [ ] Paste the answers above; confirm email `onyfel@gmail.com`.
 - [ ] Be candid in the free-text field that Robber is below the 5,000-star bar and
       you're applying under the impact/critical-infrastructure exception.
+- [ ] Confirm the exact .NET Foundation / .NET Core org links shown on your GitHub
+      profile and mention them — broader OSS standing strengthens the exception case.
 - [ ] Applications are open on a rolling basis — submit sooner rather than later
       given the 10,000-recipient cap.
 
